@@ -187,7 +187,7 @@ const skillTables = {
     farming: 50,
     mining: 60,
     combat: 60,
-    foraging: 50,
+    foraging: 55,
     fishing: 50,
     enchanting: 60,
     alchemy: 50,
@@ -196,11 +196,12 @@ const skillTables = {
     runecrafting: 25,
     social: 25,
     dungeoneering: 50,
-    hunting: 25
+    hunting: 55
   },
   maxedSkillCaps: {
     farming: 60,
-    taming: 60
+    taming: 60,
+    foraging: 55
   },
   skills: ["combat", "farming", "fishing", "mining", "foraging", "enchanting", "alchemy", "carpentry", "runecrafting", "social", "taming"],
   classes: ["healer", "mage", "berserk", "archer", "tank"],
@@ -211,7 +212,7 @@ const skillTables = {
     farming: 60,
     mining: 60,
     combat: 60,
-    foraging: 50,
+    foraging: 55,
     fishing: 50,
     enchanting: 60,
     alchemy: 50,
@@ -222,7 +223,7 @@ const skillTables = {
     dungeoneering: 50,
     dungeonClass: 50,
     slayer: 9,
-    hunting: 25
+    hunting: 50
   },
   slayers: {
     zombie: [0, 5, 15, 200, 1000, 5000, 20000, 100000, 400000, 1000000],

@@ -14,9 +14,14 @@ function getSkills(profile, profileData) {
   const skillLevelCaps = getSkillLevelCaps(profile, null);
   const totalSocialXp = getSocialSkillExperience(profileData);
 
-  /** @type {import("./skills.types.js").Skills} */
+/** @type {import("./skills.types.js").Skills} */
   const skills = {};
   for (const skill in profile.player_data?.experience || {}) {
+    // FIX: Only process keys that are strictly formatted as "SKILL_NAME"
+    if (!skill.startsWith("SKILL_") || skill.split("_").length !== 2) {
+      continue;
+    }
+
     if (skill === "SKILL_DUNGEONEERING") {
       continue;
     }
