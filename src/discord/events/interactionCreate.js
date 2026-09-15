@@ -21,7 +21,7 @@ module.exports = {
 
         console.discord(`${interaction.user.username} - [${interaction.commandName}]`);
         if (command.opensModal !== true) {
-          await interaction.deferReply({ ephemeral: true }).catch(() => {});
+          await interaction.deferReply({ ephemeral: command.publicReply !== true }).catch(() => {});
         }
         if (memberRoles.some((role) => config.discord.commands.blacklistRoles.includes(role))) {
           throw new HypixelDiscordChatBridgeError("You are blacklisted from the bot.");
