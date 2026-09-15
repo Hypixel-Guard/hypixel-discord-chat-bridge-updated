@@ -245,7 +245,22 @@ function splitMessage(message, amount) {
  * @returns {string}
  */
 function formatError(error) {
-  return error.toString().replace("[hypixel-api-reborn] ", "").replace("For help join our Discord Server https://discord.gg/NSEBNMM", "").replace("Error:", "[ERROR]");
+  const message = error
+    .toString()
+    .replace("[hypixel-api-reborn] ", "")
+    .replace("For help join our Discord Server https://discord.gg/NSEBNMM", "")
+    .replace("Error:", "[ERROR]")
+    .trim();
+
+  if (/invalid api key/i.test(message)) {
+    return `${message} If this keeps happening, please run /check-api-key in the Discord bot commands.`;
+  }
+
+  if (/rate limit/i.test(message)) {
+    return `${message} This can be fixed in Discord via the /check-api-key and /update-api-key commands and can be fixed by anyone!`;
+  }
+
+  return message;
 }
 
 /**
