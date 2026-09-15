@@ -32,7 +32,7 @@ class SkillsCommand extends minecraftCommand {
 
       const { username, profile, profileData } = await getLatestProfile(player);
 
-      const skillAverage = getSkillAverage(profile, null, {});
+      const skillAverage = getSkillAverage(profile, null, { decimals: 2, progress: true });
       const skills = getSkills(profile, profileData);
       if (!skills) {
         return this.send(`${username} has no skills.`);
