@@ -37,10 +37,15 @@ class HotmCommand extends minecraftCommand {
         throw `${username} has never gone to Dwarven Mines on ${profileData.cute_name}.`;
       }
 
+      const miningXp = profile.player_data?.experience?.SKILL_MINING ?? 0;
+
       this.send(
-        `${username}'s Hotm: ${formatNumber(hotm.level.levelWithProgress, 2)} | Gemstone Powder: ${formatNumber(
-          hotm.powder.gemstone.total
-        )} | Mithril Powder: ${formatNumber(hotm.powder.mithril.total)} | Glacite Powder: ${formatNumber(hotm.powder.glacite.total)} | Selected Ability: ${hotm.ability}`
+        `${username}'s Total Mining XP: ${formatNumber(miningXp)} | Hotm: ${formatNumber(
+          hotm.level.levelWithProgress,
+          2
+        )} | Gemstone Powder: ${formatNumber(hotm.powder.gemstone.total)} | Mithril Powder: ${formatNumber(
+          hotm.powder.mithril.total
+        )} | Glacite Powder: ${formatNumber(hotm.powder.glacite.total)} | Selected Ability: ${hotm.ability}`
       );
     } catch (error) {
       this.send(`[ERROR] ${error}`);

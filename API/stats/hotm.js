@@ -47,6 +47,27 @@ function getHotmLevel(xp = 0) {
 }
 
 /**
+ * Reads one powder type off a profile.
+ *
+ * Hypixel's field names are misleading here: `powder_<type>` is the lifetime
+ * total ever collected, while `powder_<type>_total` is the amount still
+ * unspent. Both are stored outright, so neither one should be derived by
+ * adding `powder_spent_<type>` on top of the other.
+ * @param {import("../../types/profiles.js").Member} profile
+ * @param {"mithril" | "gemstone" | "glacite"} type
+ * @returns {{ spent: number, current: number, total: number }}
+ */
+function getPowder(profile, type) {
+  const miningCore = profile?.mining_core;
+  const spent = miningCore?.[`powder_spent_${type}`] ?? 0;
+  const total = miningCore?.[`powder_${type}`] ?? 0;
+  // Fall back for profiles saved before Hypixel added the `_total` field.
+  const current = miningCore?.[`powder_${type}_total`] ?? Math.max(total - spent, 0);
+
+  return { spent, current, total };
+}
+
+/**
  * Returns the player's HotM stats.
  * @param {import("../../types/profiles.js").Member} profile
  * @returns {import("./hotm.types").HotM | null}
@@ -63,21 +84,9 @@ function getHotm(profile) {
 
     return {
       powder: {
-        mithril: {
-          spent: profile.mining_core?.powder_spent_mithril ?? 0,
-          current: profile.mining_core?.powder_mithril ?? 0,
-          total: (profile.mining_core?.powder_spent_mithril ?? 0) + (profile.mining_core?.powder_mithril ?? 0)
-        },
-        gemstone: {
-          spent: profile.mining_core?.powder_spent_gemstone ?? 0,
-          current: profile.mining_core?.powder_gemstone ?? 0,
-          total: (profile.mining_core?.powder_spent_gemstone ?? 0) + (profile.mining_core?.powder_gemstone ?? 0)
-        },
-        glacite: {
-          spent: profile.mining_core?.powder_spent_glacite ?? 0,
-          current: profile.mining_core?.powder_glacite ?? 0,
-          total: (profile.mining_core?.powder_spent_glacite ?? 0) + (profile.mining_core?.powder_glacite ?? 0)
-        }
+        mithril: getPowder(profile, "mithril"),
+        gemstone: getPowder(profile, "gemstone"),
+        glacite: getPowder(profile, "glacite")
       },
       level: getHotmLevel(hotmXp),
       // @ts-ignore
