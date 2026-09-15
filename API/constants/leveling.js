@@ -196,7 +196,7 @@ const skillTables = {
     runecrafting: 25,
     social: 25,
     dungeoneering: 50,
-    hunting: 55
+    hunting: 50
   },
   maxedSkillCaps: {
     farming: 60,
