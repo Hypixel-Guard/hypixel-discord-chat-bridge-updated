@@ -45,7 +45,7 @@ class HotmCommand extends minecraftCommand {
           2
         )} | Gemstone Powder: ${formatNumber(hotm.powder.gemstone.total)} | Mithril Powder: ${formatNumber(
           hotm.powder.mithril.total
-        )} | Glacite Powder: ${formatNumber(hotm.powder.glacite.total)} | Selected Ability: ${hotm.ability}`
+        )} | Glacite Powder: ${formatNumber(hotm.powder.glacite.total)}`
       );
     } catch (error) {
       this.send(`[ERROR] ${error}`);

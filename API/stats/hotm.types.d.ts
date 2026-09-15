@@ -28,5 +28,4 @@ export type HotM = {
     };
   };
   level: Level;
-  ability: string;
 };

@@ -88,9 +88,7 @@ function getHotm(profile) {
         gemstone: getPowder(profile, "gemstone"),
         glacite: getPowder(profile, "glacite")
       },
-      level: getHotmLevel(hotmXp),
-      // @ts-ignore
-      ability: CONSTANTS.hotm.perks[profile.mining_core?.selected_pickaxe_ability]?.name ?? "None"
+      level: getHotmLevel(hotmXp)
     };
   } catch (error) {
     console.error(error);

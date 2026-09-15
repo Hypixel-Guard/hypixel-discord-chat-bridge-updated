@@ -37,6 +37,8 @@ export type Member = {
   collection: Collection;
   pets_data: ProfilePets;
   mining_core: Mining;
+  foraging_core?: Foraging;
+  skill_tree?: SkillTree;
   objectives: Objectives;
   quests: Quests;
   player_stats: PlayerStats;
@@ -198,6 +200,34 @@ export type ProfilePets = {
   pet_care?: {
     pet_types_sacrificed?: string[];
   };
+};
+
+export type WhisperSlot = {
+  spent?: number;
+};
+
+export type Whispers = {
+  /** The *unspent* balance, despite the name. */
+  total?: number;
+  "1"?: WhisperSlot;
+  "2"?: WhisperSlot;
+  "3"?: WhisperSlot;
+  "4"?: WhisperSlot;
+  "5"?: WhisperSlot;
+};
+
+export type Foraging = {
+  whispers?: {
+    forest?: Whispers;
+    desert?: Whispers;
+  };
+};
+
+export type SkillTree = {
+  experience?: Record<string, number>;
+  selected_ability?: Record<string, string>;
+  tokens_spent?: Record<string, number>;
+  last_reset?: Record<string, number>;
 };
 
 export type Mining = {
