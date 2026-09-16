@@ -109,7 +109,7 @@ async function updateRoles({ discordId, uuid }) {
   }
 
   for (const role of roles) {
-    if (addedRoles.includes(role)) return;
+    if (addedRoles.includes(role)) continue;
     if (member.roles.cache.has(role)) {
       await member.roles.remove(role, "Updated Roles");
       // console.log(`Removed ${(await guild.roles.fetch(role)).name}`);
