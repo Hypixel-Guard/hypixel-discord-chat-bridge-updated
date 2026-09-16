@@ -39,9 +39,27 @@ class GardenCommand extends minecraftCommand {
         return this.send(`[ERROR] ${username} does not have a garden.`);
       }
 
-      this.send(
-        `${username}'s Garden ${gardenData.level.level} | Crop Milestones: Wheat: ${gardenData.cropMilesstone.wheat.level} | Carrot: ${gardenData.cropMilesstone.carrot.level} | Cane: ${gardenData.cropMilesstone.sugarCane.level} | Potato: ${gardenData.cropMilesstone.potato.level} | Wart: ${gardenData.cropMilesstone.netherWart.level} | Pumpkin: ${gardenData.cropMilesstone.pumpkin.level} | Melon: ${gardenData.cropMilesstone.melon.level} | Mushroom: ${gardenData.cropMilesstone.mushroom.level} | Cocoa: ${gardenData.cropMilesstone.cocoaBeans.level} | Cactus: ${gardenData.cropMilesstone.cactus.level}`
-      );
+      const milestones = [
+        ["Wheat", "wheat"],
+        ["Carrot", "carrot"],
+        ["Cane", "sugarCane"],
+        ["Potato", "potato"],
+        ["Wart", "netherWart"],
+        ["Pumpkin", "pumpkin"],
+        ["Melon", "melon"],
+        ["Shroom", "mushroom"],
+        ["Cocoa", "cocoaBeans"],
+        ["Cactus", "cactus"],
+        ["Moon", "moonflower"],
+        ["Sun", "sunflower"],
+        ["Rose", "wildRose"]
+      ]
+        // @ts-ignore
+        .map(([label, key]) => `${label}: ${gardenData.cropMilesstone[key].level}`)
+        .join(" | ");
+
+      // Keep this under the 256 char chat limit (including the "/gc " prefix) so it isn't split into two messages.
+      this.send(`${username}'s Garden ${gardenData.level.level} | Crop Milestones (avg ${gardenData.average}): ${milestones}`);
     } catch (error) {
       console.log(error);
       this.send(`[ERROR] ${error}`);

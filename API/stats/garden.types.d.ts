@@ -13,5 +13,10 @@ export type Garden = {
     mushroom: Level;
     cocoaBeans: Level;
     cactus: Level;
+    moonflower: Level;
+    sunflower: Level;
+    wildRose: Level;
   };
+  /** Average crop milestone level across all crops, fixed to 2 decimals. */
+  average: string;
 };
