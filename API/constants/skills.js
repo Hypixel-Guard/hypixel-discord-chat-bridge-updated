@@ -233,6 +233,50 @@ function getOverflowLevel(xp) {
 }
 
 /**
+ * Calculates the "overflow" crop milestone for a garden crop, ignoring the in-game 46 tier cap. Below the cap
+ * this walks the crop's milestone table as normal. Past the cap every further tier costs the same as the
+ * final tier of the table (e.g. wheat keeps requiring 800k crops per tier forever).
+ * @param {number} xp Total crops collected (garden.resources_collected value).
+ * @param {string} cropId The crop's resource id (used to pick the milestone table).
+ * @returns {{ overflowLevel: number, level: number, levelWithProgress: number, xpCurrent: number, xpForNext: number, progress: number }}
+ */
+function getCropOverflowLevel(xp, cropId) {
+  const xpTable = getXpTable(cropId);
+  const maxLevel = Math.max(...Object.keys(xpTable).map(Number));
+  const lastCost = xpTable[maxLevel];
+
+  if (typeof xp !== "number" || isNaN(xp)) {
+    xp = 0;
+  }
+
+  let level = 0;
+  let xpCurrent = xp;
+
+  while (level < maxLevel && xpTable[level + 1] <= xpCurrent) {
+    level++;
+    xpCurrent -= xpTable[level];
+  }
+
+  if (level >= maxLevel) {
+    const extraLevels = Math.floor(xpCurrent / lastCost);
+    level += extraLevels;
+    xpCurrent -= extraLevels * lastCost;
+  }
+
+  const xpForNext = xpTable[level + 1] ?? lastCost;
+  const progress = xpCurrent / xpForNext;
+
+  return {
+    overflowLevel: Math.max(0, level - maxLevel),
+    level,
+    levelWithProgress: level + progress,
+    xpCurrent,
+    xpForNext,
+    progress
+  };
+}
+
+/**
  * Calculates the total social skill experience for a given profile.
  * @param {import("../../types/profiles.js").Profile} profile The profile object containing skill data.
  * @returns {number} The total social skill experience.
@@ -250,5 +294,6 @@ module.exports = {
   getSkillLevelCaps,
   getSkillExperience,
   getSocialSkillExperience,
-  getOverflowLevel
+  getOverflowLevel,
+  getCropOverflowLevel
 };
