@@ -170,23 +170,39 @@ function getSkillExperience(skill, level) {
 }
 
 /**
- * Calculates the "overflow" level for xp earned past the normal level 60 cap. Unlike the base 1-60
- * table, the xp cost per level here isn't fixed: every 10 levels the per-level delta doubles, but the
+ * Calculates the "overflow" level for a skill, ignoring every in-game level cap (the fixed 50/55 caps,
+ * farming's Jacob's perks and taming's sacrificed pets). Below 60 this simply walks the base xp table
+ * uncapped. Past 60 the xp cost per level isn't fixed: every 10 levels the per-level delta doubles, but the
  * single level that crosses into a new decade (61, 71, 81, ...) still costs prevLevel + the delta of the
  * decade that just ended, with the doubled delta only applying from the following level onward.
  * @param {number} xp Total skill xp.
  * @returns {{ overflowLevel: number, level: number, levelWithProgress: number, xpCurrent: number, xpForNext: number, progress: number }}
  */
 function getOverflowLevel(xp) {
+  const xpTable = getXpTable("default");
   const baseXp = getSkillExperience("default", 60);
 
-  if (typeof xp !== "number" || isNaN(xp) || xp < baseXp) {
-    return { overflowLevel: 0, level: 60, levelWithProgress: 60, xpCurrent: 0, xpForNext: baseXp, progress: 0 };
+  if (typeof xp !== "number" || isNaN(xp)) {
+    xp = 0;
+  }
+
+  if (xp < baseXp) {
+    let level = 0;
+    let xpCurrent = xp;
+
+    while (xpTable[level + 1] <= xpCurrent) {
+      level++;
+      xpCurrent -= xpTable[level];
+    }
+
+    const xpForNext = xpTable[level + 1];
+
+    return { overflowLevel: 0, level, levelWithProgress: level + xpCurrent / xpForNext, xpCurrent, xpForNext, progress: xpCurrent / xpForNext };
   }
 
   let level = 60;
   let cumulative = baseXp;
-  let cost = getXpTable("default")[60];
+  let cost = xpTable[60];
 
   while (true) {
     const n = level + 1 - 60;
