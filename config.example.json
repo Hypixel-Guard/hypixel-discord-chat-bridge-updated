@@ -119,6 +119,10 @@
         "enabled": false,
         "roleId": ""
       },
+      "unverified": {
+        "enabled": false,
+        "roleId": ""
+      },
       "guildMember": {
         "enabled": false,
         "roleId": ""

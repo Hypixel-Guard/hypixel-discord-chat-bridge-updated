@@ -37,6 +37,11 @@ async function updateRoles({ discordId, uuid }) {
     // console.log("Added verified role");
   }
 
+  const unverifiedRole = verificationRoles.unverified;
+  if (unverifiedRole?.enabled && unverifiedRole.roleId && member.roles.cache.has(unverifiedRole.roleId)) {
+    await member.roles.remove(unverifiedRole.roleId, "Member verified");
+  }
+
   const [hypixelGuild, player, skyblock] = await Promise.all([
     hypixelRebornAPI.getGuild("player", bot.username, { noCaching: true, noCacheCheck: true }),
     hypixelRebornAPI.getPlayer(uuid),
@@ -104,7 +109,7 @@ async function updateRoles({ discordId, uuid }) {
   }
 
   for (const role of roles) {
-    if (addedRoles.includes(role)) return;
+    if (addedRoles.includes(role)) continue;
     if (member.roles.cache.has(role)) {
       await member.roles.remove(role, "Updated Roles");
       // console.log(`Removed ${(await guild.roles.fetch(role)).name}`);

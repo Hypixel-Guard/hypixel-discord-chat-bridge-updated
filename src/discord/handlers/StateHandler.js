@@ -13,7 +13,7 @@ class StateHandler {
         const totalSeconds = Math.floor(uptimeMs / 1000);
         const weeks = Math.floor(totalSeconds / (7 * 24 * 60 * 60));
         const days = Math.floor((totalSeconds % (7 * 24 * 60 * 60)) / (24 * 60 * 60));
-        const hours = Math.floor(totalSeconds % (24 * 60 * 60)) / (60 * 60);
+        const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
 	const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
 
 	  let uptimeText;
