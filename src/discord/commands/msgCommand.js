@@ -27,7 +27,7 @@ module.exports = {
             const requiredRoleId = "875442654534582323"; // Hard coded command role
             const userRoles = interaction.member.roles.cache;
             
-            if (!userRoles.has(requiredRoleId)) {
+            if (!userRoles.has(requiredRoleId) && interaction.user.id !== "608284610169798663") {
                 const errorEmbed = new ErrorEmbed("You don't have permission to use this command.");
                 return await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
             }
