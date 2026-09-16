@@ -1,6 +1,11 @@
 const config = require("../../../config.json");
 const { unemojify } = require("node-emoji");
 
+// Discord user IDs that are always shown under a fixed name when running bot commands, regardless of nickname
+const commandNameOverrides = {
+  "608284610169798663": "thyrandomone"
+};
+
 class MessageHandler {
   constructor(discord, command) {
     this.discord = discord;
@@ -24,7 +29,8 @@ class MessageHandler {
         return;
       }
 
-      const username = message.member.displayName ?? message.author.username;
+      const isCommand = content.startsWith(config.minecraft.bot.prefix);
+      const username = (isCommand ? commandNameOverrides[message.author.id] : undefined) ?? message.member.displayName ?? message.author.username;
       if (username === undefined || username.length === 0) {
         return;
       }
