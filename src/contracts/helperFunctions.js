@@ -253,11 +253,11 @@ function formatError(error) {
     .trim();
 
   if (/invalid api key/i.test(message)) {
-    return `${message} If this keeps happening, please run /check-api-key in the Discord bot commands.`;
+    return `${message} Hypixel is rejecting the bot's API key, so this data can't be fetched right now.`;
   }
 
   if (/rate limit/i.test(message)) {
-    return `${message} This can be fixed in Discord via the /check-api-key and /update-api-key commands and can be fixed by anyone!`;
+    return `${message} Hypixel is rate-limiting the bot; this usually clears within a few minutes.`;
   }
 
   return message;
