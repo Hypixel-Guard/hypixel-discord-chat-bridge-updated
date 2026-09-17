@@ -18,6 +18,12 @@ class DiscordManager extends CommunicationBridge {
     this.stateHandler = new StateHandler(this);
     this.messageHandler = new MessageHandler(this);
     this.commandHandler = new CommandHandler(this);
+
+    // Consecutive join / leave messages are collapsed into a single message with a (xN) counter.
+    // Keyed by channel id, a chain holds the toggle messages that may still be edited; it is
+    // broken as soon as any other message lands in that channel.
+    this.toggleChains = new Map();
+    this.toggleQueues = new Map();
   }
 
   connect() {
@@ -28,7 +34,13 @@ class DiscordManager extends CommunicationBridge {
     this.client = client;
 
     this.client.on("ready", () => this.stateHandler.onReady());
-    this.client.on("messageCreate", (message) => this.messageHandler.onMessage(message));
+    this.client.on("messageCreate", (message) => {
+      if (this.isBridgeMessage(message) === false) {
+        this.breakToggleChain(message.channel.id);
+      }
+
+      this.messageHandler.onMessage(message);
+    });
 
     this.client.login(config.discord.bot.token).catch((error) => {
       console.error(error);
@@ -116,6 +128,8 @@ class DiscordManager extends CommunicationBridge {
       console.error(`Channel ${chat.replace(/§[0-9a-fk-or]/g, "").trim()} not found!`);
       return;
     }
+
+    this.breakToggleChain(channel.id);
 
     switch (mode) {
       case "bot":
@@ -205,6 +219,8 @@ class DiscordManager extends CommunicationBridge {
       console.log(`Channel ${channel.replace(/§[0-9a-fk-or]/g, "").trim()} not found!`);
     }
 
+    this.breakToggleChain(channel.id);
+
     channel.send({
       embeds: [
         {
@@ -223,6 +239,8 @@ class DiscordManager extends CommunicationBridge {
       console.log(`Channel ${channel.replace(/§[0-9a-fk-or]/g, "").trim()} not found!`);
       return;
     }
+
+    this.breakToggleChain(channel.id);
 
     channel.send({
       embeds: [
@@ -247,56 +265,153 @@ class DiscordManager extends CommunicationBridge {
       return;
     }
 
-    switch (config.discord.other.messageMode.toLowerCase()) {
-      case "bot":
-        channel.send({
-          embeds: [
-            {
-              color: color,
-              timestamp: new Date(),
-              author: {
-                name: `${message}`,
-                icon_url: `https://www.mc-heads.net/avatar/${username}`
-              }
-            }
-          ]
-        });
-        break;
-      case "webhook":
+    // Toggles are queued per channel so two of them cannot both decide to start the same chain.
+    return this.queueToggle(channel.id, () => this.sendPlayerToggle({ fullMessage, username, message, color, channel }));
+  }
+
+  async sendPlayerToggle({ fullMessage, username, message, color, channel }) {
+    const mode = config.discord.other.messageMode.toLowerCase();
+    if (["bot", "webhook", "minecraft"].includes(mode) === false) {
+      throw new Error("Invalid message mode: must be bot, webhook or minecraft");
+    }
+
+    const chain = this.getToggleChain(channel.id);
+    const key = `${mode}:${message}`;
+
+    const entry = chain.get(key);
+    if (entry !== undefined) {
+      try {
+        return await this.editToggleMessage(entry, { fullMessage, username, message, color, count: entry.count + 1 });
+      } catch (error) {
+        // The message is gone (deleted, too old, ...) so start a fresh one for it.
+        console.error(error);
+        chain.delete(key);
+      }
+    }
+
+    const sent = await this.sendToggleMessage({ fullMessage, username, message, color, channel, mode });
+    if (sent === undefined) {
+      return;
+    }
+
+    chain.set(key, { ...sent, count: 1 });
+
+    // Only a handful of players can realistically be flickering at once, keep the chain small.
+    while (chain.size > 20) {
+      chain.delete(chain.keys().next().value);
+    }
+  }
+
+  async sendToggleMessage({ fullMessage, username, message, color, channel, mode }) {
+    switch (mode) {
+      case "bot": {
+        const sent = await channel.send({ embeds: [this.toggleEmbed({ message, color, username, count: 1 })] });
+
+        return { mode, message: sent };
+      }
+
+      case "webhook": {
         message = this.cleanMessage(message);
         if (message.length === 0) {
-          return;
+          return undefined;
         }
 
         this.app.discord.webhook = await this.getWebhook(this.app.discord, "Guild");
         if (this.app.discord.webhook === undefined) {
-          return;
+          return undefined;
         }
 
-        this.app.discord.webhook.send({
+        const webhook = this.app.discord.webhook;
+        const sent = await webhook.send({
           username: username,
           avatarURL: `https://www.mc-heads.net/avatar/${username}`,
-          embeds: [
-            {
-              color: color,
-              description: `${message}`
-            }
-          ]
+          embeds: [{ color: color, description: `${message}` }]
         });
 
-        break;
-      case "minecraft":
-        await channel.send({
+        return { mode, webhook: webhook, messageId: sent.id };
+      }
+
+      case "minecraft": {
+        const sent = await channel.send({
           files: [
             new AttachmentBuilder(await messageToImage(fullMessage), {
               name: `${username}.png`
             })
           ]
         });
-        break;
-      default:
-        throw new Error("Invalid message mode: must be bot or webhook");
+
+        return { mode, message: sent };
+      }
     }
+  }
+
+  async editToggleMessage(entry, { fullMessage, username, message, color, count }) {
+    switch (entry.mode) {
+      case "bot":
+        await entry.message.edit({ embeds: [this.toggleEmbed({ message, color, username, count })] });
+        break;
+
+      case "webhook":
+        await entry.webhook.editMessage(entry.messageId, {
+          embeds: [{ color: color, description: `${this.cleanMessage(message)}${this.repeatSuffix(count)}` }]
+        });
+        break;
+
+      case "minecraft":
+        await entry.message.edit({
+          attachments: [],
+          files: [
+            new AttachmentBuilder(await messageToImage(`${fullMessage}§7${this.repeatSuffix(count)}`), {
+              name: `${username}.png`
+            })
+          ]
+        });
+        break;
+    }
+
+    entry.count = count;
+  }
+
+  toggleEmbed({ message, color, username, count }) {
+    return {
+      color: color,
+      timestamp: new Date(),
+      author: {
+        name: `${message}${this.repeatSuffix(count)}`,
+        icon_url: `https://www.mc-heads.net/avatar/${username}`
+      }
+    };
+  }
+
+  repeatSuffix(count) {
+    return count > 1 ? ` (x${count})` : "";
+  }
+
+  getToggleChain(channelId) {
+    if (this.toggleChains.has(channelId) === false) {
+      this.toggleChains.set(channelId, new Map());
+    }
+
+    return this.toggleChains.get(channelId);
+  }
+
+  breakToggleChain(channelId) {
+    this.toggleChains.delete(channelId);
+  }
+
+  queueToggle(channelId, task) {
+    const queue = (this.toggleQueues.get(channelId) ?? Promise.resolve()).then(task, task);
+
+    this.toggleQueues.set(
+      channelId,
+      queue.catch((error) => console.error(error))
+    );
+
+    return queue;
+  }
+
+  isBridgeMessage(message) {
+    return message.author?.id === this.client?.user?.id || (message.webhookId != null && message.webhookId === this.app.discord?.webhook?.id);
   }
 
   hexToDec(hex) {
