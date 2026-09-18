@@ -85,21 +85,8 @@ class NetworthStatsCommand extends minecraftCommand {
 
       const parts = major.map((category) => `${category.name}: ${formatNumber(category.total)} (${((category.total / networth) * 100).toFixed(1)}%)`);
 
-      // Split across messages at category boundaries so nothing gets cut mid-word (240 char chat limit)
-      const messages = [`${username}'s Networth: ${formatNumber(networth)} »`];
-      for (const part of parts) {
-        const current = messages[messages.length - 1];
-        const separator = current.endsWith("»") ? " " : " | ";
-        if (current.length + separator.length + part.length > 240) {
-          messages.push(part);
-        } else {
-          messages[messages.length - 1] = `${current}${separator}${part}`;
-        }
-      }
-
-      for (const msg of messages) {
-        await this.send(msg);
-      }
+      // Discord gets the whole thing in one message; Minecraft chat gets it split at category boundaries
+      await this.sendLong(`${username}'s Networth: ${formatNumber(networth)} » ${parts.join(" | ")}`);
     } catch (error) {
       console.error(error);
       this.send(`[ERROR] ${error}`);
