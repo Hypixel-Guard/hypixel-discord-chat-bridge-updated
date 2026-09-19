@@ -40,14 +40,11 @@ class OverflowCommand extends minecraftCommand {
 
       // Cosmetic skills (runecrafting, social) can't overflow and aren't part of
       // the skill average, so leaving them out keeps the message inside the chat limit.
+      // getOverflowLevel ignores every in-game cap (50/55 caps, Jacob's perks, sacrificed pets),
+      // so a skill's level here is purely a function of its xp.
       const levels = Object.entries(skills)
         .filter(([type]) => !skillTables.cosmeticSkills.includes(type))
-        .map(([type, data]) => {
-          const overflow = getOverflowLevel(data.xp);
-          const level = overflow.overflowLevel > 0 ? overflow.levelWithProgress : data.levelWithProgress;
-
-          return { type, level };
-        });
+        .map(([type, data]) => ({ type, level: getOverflowLevel(data.xp).levelWithProgress }));
 
       const average = levels.reduce((total, { level }) => total + level, 0) / levels.length;
       const formattedSkills = levels.map(({ type, level }) => `${titleCase(type)} ${level.toFixed(2)}`);

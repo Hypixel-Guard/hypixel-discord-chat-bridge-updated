@@ -170,23 +170,39 @@ function getSkillExperience(skill, level) {
 }
 
 /**
- * Calculates the "overflow" level for xp earned past the normal level 60 cap. Unlike the base 1-60
- * table, the xp cost per level here isn't fixed: every 10 levels the per-level delta doubles, but the
+ * Calculates the "overflow" level for a skill, ignoring every in-game level cap (the fixed 50/55 caps,
+ * farming's Jacob's perks and taming's sacrificed pets). Below 60 this simply walks the base xp table
+ * uncapped. Past 60 the xp cost per level isn't fixed: every 10 levels the per-level delta doubles, but the
  * single level that crosses into a new decade (61, 71, 81, ...) still costs prevLevel + the delta of the
  * decade that just ended, with the doubled delta only applying from the following level onward.
  * @param {number} xp Total skill xp.
  * @returns {{ overflowLevel: number, level: number, levelWithProgress: number, xpCurrent: number, xpForNext: number, progress: number }}
  */
 function getOverflowLevel(xp) {
+  const xpTable = getXpTable("default");
   const baseXp = getSkillExperience("default", 60);
 
-  if (typeof xp !== "number" || isNaN(xp) || xp < baseXp) {
-    return { overflowLevel: 0, level: 60, levelWithProgress: 60, xpCurrent: 0, xpForNext: baseXp, progress: 0 };
+  if (typeof xp !== "number" || isNaN(xp)) {
+    xp = 0;
+  }
+
+  if (xp < baseXp) {
+    let level = 0;
+    let xpCurrent = xp;
+
+    while (xpTable[level + 1] <= xpCurrent) {
+      level++;
+      xpCurrent -= xpTable[level];
+    }
+
+    const xpForNext = xpTable[level + 1];
+
+    return { overflowLevel: 0, level, levelWithProgress: level + xpCurrent / xpForNext, xpCurrent, xpForNext, progress: xpCurrent / xpForNext };
   }
 
   let level = 60;
   let cumulative = baseXp;
-  let cost = getXpTable("default")[60];
+  let cost = xpTable[60];
 
   while (true) {
     const n = level + 1 - 60;
@@ -217,6 +233,50 @@ function getOverflowLevel(xp) {
 }
 
 /**
+ * Calculates the "overflow" crop milestone for a garden crop, ignoring the in-game 46 tier cap. Below the cap
+ * this walks the crop's milestone table as normal. Past the cap every further tier costs the same as the
+ * final tier of the table (e.g. wheat keeps requiring 800k crops per tier forever).
+ * @param {number} xp Total crops collected (garden.resources_collected value).
+ * @param {string} cropId The crop's resource id (used to pick the milestone table).
+ * @returns {{ overflowLevel: number, level: number, levelWithProgress: number, xpCurrent: number, xpForNext: number, progress: number }}
+ */
+function getCropOverflowLevel(xp, cropId) {
+  const xpTable = getXpTable(cropId);
+  const maxLevel = Math.max(...Object.keys(xpTable).map(Number));
+  const lastCost = xpTable[maxLevel];
+
+  if (typeof xp !== "number" || isNaN(xp)) {
+    xp = 0;
+  }
+
+  let level = 0;
+  let xpCurrent = xp;
+
+  while (level < maxLevel && xpTable[level + 1] <= xpCurrent) {
+    level++;
+    xpCurrent -= xpTable[level];
+  }
+
+  if (level >= maxLevel) {
+    const extraLevels = Math.floor(xpCurrent / lastCost);
+    level += extraLevels;
+    xpCurrent -= extraLevels * lastCost;
+  }
+
+  const xpForNext = xpTable[level + 1] ?? lastCost;
+  const progress = xpCurrent / xpForNext;
+
+  return {
+    overflowLevel: Math.max(0, level - maxLevel),
+    level,
+    levelWithProgress: level + progress,
+    xpCurrent,
+    xpForNext,
+    progress
+  };
+}
+
+/**
  * Calculates the total social skill experience for a given profile.
  * @param {import("../../types/profiles.js").Profile} profile The profile object containing skill data.
  * @returns {number} The total social skill experience.
@@ -234,5 +294,6 @@ module.exports = {
   getSkillLevelCaps,
   getSkillExperience,
   getSocialSkillExperience,
-  getOverflowLevel
+  getOverflowLevel,
+  getCropOverflowLevel
 };

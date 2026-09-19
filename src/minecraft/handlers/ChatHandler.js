@@ -1,5 +1,6 @@
 const { checkRequirements, generateEmbed } = require("../../discord/commands/requirementsCommand.js");
 const { replaceAllRanks, replaceVariables } = require("../../contracts/helperFunctions.js");
+const { consumeRelayOverride } = require("../../contracts/relayOverrides.js");
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const updateCommand = require("../../discord/commands/updateCommand.js");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -582,20 +583,36 @@ class StateHandler extends eventHandler {
       return;
     }
 
-    if (this.isDiscordMessage(match.groups.message) === false) {
-      const { chatType, rank, username, guildRank = "[Member]", message } = match.groups;
-      if (message.includes("replying to") && username === this.bot.username) {
+    // Commands that split a long reply across several chat messages register how the bot's own
+    // echoes should reach Discord: the first chunk carries the full text, the rest are skipped.
+    let relayMessage = match.groups.message;
+    let forceRelay = false;
+    if (match.groups.username === this.bot.username) {
+      const override = consumeRelayOverride(match.groups.message.replace(/§[0-9a-fk-or]/g, ""));
+      if (override === null) {
+        return;
+      }
+
+      if (override !== undefined) {
+        relayMessage = override;
+        forceRelay = true;
+      }
+    }
+
+    if (forceRelay || this.isDiscordMessage(match.groups.message) === false) {
+      const { chatType, rank, username, guildRank = "[Member]" } = match.groups;
+      if (relayMessage.includes("replying to") && username === this.bot.username) {
         return;
       }
 
       this.minecraft.broadcastMessage({
-        fullMessage: colouredMessage,
+        fullMessage: forceRelay ? colouredMessage.replace(match.groups.message, relayMessage) : colouredMessage,
         chat: chatType,
         chatType,
         username,
         rank,
         guildRank,
-        message,
+        message: relayMessage,
         color: this.minecraftChatColorToHex(this.getRankColor(colouredMessage))
       });
     }
