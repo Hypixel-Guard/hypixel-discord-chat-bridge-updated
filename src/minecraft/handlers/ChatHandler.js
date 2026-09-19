@@ -572,12 +572,17 @@ class StateHandler extends eventHandler {
       })
     }*/
 
+    // When a chat message mentions Discord, Hypixel appends its "Please be mindful of Discord links..."
+    // warning to the same packet on a new line. Only the chat line itself should be parsed and relayed.
+    const chatLine = message.split("\n")[0];
+    const colouredChatLine = colouredMessage.split("\n")[0];
+
     const regex =
       config.discord.other.messageMode === "minecraft"
         ? /^(?<chatType>§[0-9a-fA-F](Guild|Officer)) > (?<rank>§[0-9a-fA-F](?:\[.*?\])?)?\s*(?<username>[^§\s]+)\s*(?:(?<guildRank>§[0-9a-fA-F](?:\[.*?\])?))?\s*§f: (?<message>.*)/
         : /^(?<chatType>\w+) > (?:(?:\[(?<rank>[^\]]+)\] )?(?:(?<username>\w+)(?: \[(?<guildRank>[^\]]+)\])?: )?)?(?<message>.+)$/;
 
-    const match = (config.discord.other.messageMode === "minecraft" ? colouredMessage : message).match(regex);
+    const match = (config.discord.other.messageMode === "minecraft" ? colouredChatLine : chatLine).match(regex);
 
     if (!match) {
       return;
@@ -606,14 +611,14 @@ class StateHandler extends eventHandler {
       }
 
       this.minecraft.broadcastMessage({
-        fullMessage: forceRelay ? colouredMessage.replace(match.groups.message, relayMessage) : colouredMessage,
+        fullMessage: forceRelay ? colouredChatLine.replace(match.groups.message, relayMessage) : colouredChatLine,
         chat: chatType,
         chatType,
         username,
         rank,
         guildRank,
         message: relayMessage,
-        color: this.minecraftChatColorToHex(this.getRankColor(colouredMessage))
+        color: this.minecraftChatColorToHex(this.getRankColor(colouredChatLine))
       });
     }
 
