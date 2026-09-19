@@ -1,6 +1,6 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
-const { formatNumber } = require("../../contracts/helperFunctions.js");
+const { formatNumber, formatError } = require("../../contracts/helperFunctions.js");
 const { getKuudra } = require("../../../API/stats/crimson.js");
 
 class KuudraCommand extends minecraftCommand {
@@ -44,7 +44,7 @@ class KuudraCommand extends minecraftCommand {
       );
     } catch (error) {
       console.error(error);
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

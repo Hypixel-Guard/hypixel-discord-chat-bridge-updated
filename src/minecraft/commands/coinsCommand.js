@@ -1,6 +1,6 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
-const { formatNumber } = require("../../contracts/helperFunctions.js");
+const { formatNumber, formatError } = require("../../contracts/helperFunctions.js");
 
 class CoinsCommand extends minecraftCommand {
   /** @param {import("minecraft-protocol").Client} minecraft */
@@ -41,7 +41,7 @@ class CoinsCommand extends minecraftCommand {
       this.send(`${username}'s Coins: ${formatNumber(total)} (Purse: ${formatNumber(purse)} | Bank: ${bankFormatted})`);
     } catch (error) {
       console.error(error);
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

@@ -1,5 +1,6 @@
 const { getRandomWord, scrambleWord } = require("../constants/words.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
+const { formatError } = require("../../contracts/helperFunctions.js");
 
 /**
  * Returns the word
@@ -94,7 +95,7 @@ class unscrambleCommand extends minecraftCommand {
         }
       }, 30000);
     } catch (error) {
-      this.send(`[ERROR] ${error || "Something went wrong.."}`);
+      this.send(formatError(error));
     }
   }
 }

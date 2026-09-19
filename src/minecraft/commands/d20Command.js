@@ -1,4 +1,5 @@
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
+const { formatError } = require("../../contracts/helperFunctions.js");
 
 class D20Command extends minecraftCommand {
   /** @param {import("minecraft-protocol").Client} minecraft */
@@ -29,7 +30,7 @@ class D20Command extends minecraftCommand {
 
       this.send(`${player} rolled a d20 and got ${roll}!`);
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

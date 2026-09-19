@@ -1,5 +1,6 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
+const { formatError } = require("../../contracts/helperFunctions.js");
 const getHotm = require("../../../API/stats/hotm.js");
 
 class ForgeCommand extends minecraftCommand {
@@ -42,7 +43,7 @@ class ForgeCommand extends minecraftCommand {
       const forgeItems = forge.map((item) => `${item.slot}: ${item.name} ${item.timeFinishedText}`);
       this.send(`${username}'s Forge: ${forgeItems.join(" | ")}`);
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

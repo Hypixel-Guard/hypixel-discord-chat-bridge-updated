@@ -1,4 +1,4 @@
-const { delay } = require("../../contracts/helperFunctions.js");
+const { delay, formatError } = require("../../contracts/helperFunctions.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
 class warpoutCommand extends minecraftCommand {
   /** @param {import("minecraft-protocol").Client} minecraft */
@@ -115,7 +115,7 @@ class warpoutCommand extends minecraftCommand {
         }
       }, 30000);
     } catch (error) {
-      this.send(`${player} [ERROR] ${error || "Something went wrong.."}`);
+      this.send(`${player} ${formatError(error)}`);
       this.isOnCooldown = false;
     }
   }

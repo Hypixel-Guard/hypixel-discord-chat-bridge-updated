@@ -245,12 +245,20 @@ function splitMessage(message, amount) {
  * @returns {string}
  */
 function formatError(error) {
-  const message = error
-    .toString()
+  // Errors reach here as Error objects (hypixel-api-reborn), raw strings (thrown from API/functions) or undefined.
+  let message = String(error ?? "Something went wrong..")
     .replace("[hypixel-api-reborn] ", "")
     .replace("For help join our Discord Server https://discord.gg/NSEBNMM", "")
-    .replace("Error:", "[ERROR]")
+    .replace(/^Error:\s*/, "")
     .trim();
+
+  if (!message.startsWith("[ERROR]")) {
+    message = `[ERROR] ${message}`;
+  }
+
+  if (!/[.!?]$/.test(message)) {
+    message += ".";
+  }
 
   if (/invalid api key/i.test(message)) {
     return `${message} If this keeps happening, please run /check-api-key in the Discord bot commands.`;

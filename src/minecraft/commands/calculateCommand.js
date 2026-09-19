@@ -1,4 +1,4 @@
-const { formatNumber } = require("../../contracts/helperFunctions.js");
+const { formatNumber, formatError } = require("../../contracts/helperFunctions.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
 
 class CalculateCommand extends minecraftCommand {
@@ -40,7 +40,7 @@ class CalculateCommand extends minecraftCommand {
 
       return this.send(`${calculation} = ${formatNumber(answer)}`);
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

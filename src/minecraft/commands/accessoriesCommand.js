@@ -1,7 +1,7 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
 const { getAccessories } = require("../../../API/stats/accessories.js");
-const { formatNumber } = require("../../contracts/helperFunctions.js");
+const { formatNumber, formatError } = require("../../contracts/helperFunctions.js");
 
 class AccessoriesCommand extends minecraftCommand {
   /** @param {import("minecraft-protocol").Client} minecraft */
@@ -49,7 +49,7 @@ class AccessoriesCommand extends minecraftCommand {
         `${username}'s Accessories: ${talismans.amount} (${formatNumber(talismans.magicalPower)} MP), Recombed: ${talismans.recombed}, Enriched: ${talismans.enriched} (${formattedRarities})`
       );
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

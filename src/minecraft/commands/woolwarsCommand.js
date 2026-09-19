@@ -1,5 +1,5 @@
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
-const { formatNumber } = require("../../contracts/helperFunctions.js");
+const { formatNumber, formatError } = require("../../contracts/helperFunctions.js");
 const hypixel = require("../../contracts/API/HypixelRebornAPI.js");
 
 class WoolwarsCommand extends minecraftCommand {
@@ -43,7 +43,7 @@ class WoolwarsCommand extends minecraftCommand {
         )} | WPP: ${formatNumber(woolsPlaced / gamesPlayed)} | WPG: ${(woolsPlaced / blocksBroken).toFixed(2)}`
       );
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

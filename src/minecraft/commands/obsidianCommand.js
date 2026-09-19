@@ -1,7 +1,7 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const { getObsidianCollection } = require("../../../API/stats/collections.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
-const { formatNumber } = require("../../contracts/helperFunctions.js");
+const { formatNumber, formatError } = require("../../contracts/helperFunctions.js");
 
 class ObsidianCommand extends minecraftCommand {
   /** @param {import("minecraft-protocol").Client} minecraft */
@@ -38,7 +38,7 @@ class ObsidianCommand extends minecraftCommand {
 
       this.send(`${username}'s Obsidian Collection: ${formatNumber(obsidian)}`);
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

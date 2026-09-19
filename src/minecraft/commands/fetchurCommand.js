@@ -1,4 +1,5 @@
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
+const { formatError } = require("../../contracts/helperFunctions.js");
 const { getFetchur } = require("../../../API/functions/getFetchur.js");
 
 class FetchurCommand extends minecraftCommand {
@@ -22,7 +23,7 @@ class FetchurCommand extends minecraftCommand {
 
       this.send(`Fetchur Requests: ${text} | Description: ${description}`);
     } catch (error) {
-      this.send(`[ERROR] ${error || "Something went wrong.."}`);
+      this.send(formatError(error));
     }
   }
 }

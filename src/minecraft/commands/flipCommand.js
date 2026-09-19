@@ -1,4 +1,5 @@
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
+const { formatError } = require("../../contracts/helperFunctions.js");
 
 class FlipCommand extends minecraftCommand {
   /** @param {import("minecraft-protocol").Client} minecraft */
@@ -21,7 +22,7 @@ class FlipCommand extends minecraftCommand {
 
       this.send(`${player} flipped a coin and got ${result}!`);
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

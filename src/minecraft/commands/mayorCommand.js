@@ -1,5 +1,5 @@
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
-const { delay } = require("../../contracts/helperFunctions.js");
+const { delay, formatError } = require("../../contracts/helperFunctions.js");
 // @ts-ignore
 const { get } = require("axios");
 
@@ -49,7 +49,7 @@ class MayorCommand extends minecraftCommand {
         this.send(`[MAYOR] Current Election: ${currentLeader.name} has ${percentage.toFixed(2)}% of the votes.`);
       }
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

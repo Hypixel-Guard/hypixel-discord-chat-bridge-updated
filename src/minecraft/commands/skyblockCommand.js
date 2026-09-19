@@ -2,7 +2,7 @@ const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
 const { getAccessories } = require("../../../API/stats/accessories.js");
 const { getSkillAverage } = require("../../../API/constants/skills.js");
-const { formatNumber } = require("../../contracts/helperFunctions.js");
+const { formatNumber, formatError } = require("../../contracts/helperFunctions.js");
 const { ProfileNetworthCalculator } = require("skyhelper-networth");
 const { getDungeons } = require("../../../API/stats/dungeons.js");
 const { getSlayer } = require("../../../API/stats/slayer.js");
@@ -63,7 +63,7 @@ class SkyblockCommand extends minecraftCommand {
         `${username}'s Level: ${level} | Skill Avg: ${skillAverage} | Slayer: ${slayerText} | Cata: ${catacombsLevel} | Class Avg: ${classAverage} | NW: ${networthValue} | MP: ${magicalPower} | Hotm: ${hotmLevel}`
       );
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

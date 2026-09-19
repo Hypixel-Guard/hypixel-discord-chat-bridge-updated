@@ -1,4 +1,5 @@
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
+const { formatError } = require("../../contracts/helperFunctions.js");
 const { uploadImage } = require("../../contracts/API/imgurAPI.js");
 // @ts-ignore
 const { get } = require("axios");
@@ -34,7 +35,7 @@ class KittyCommand extends minecraftCommand {
 
       this.send("Cat image uploaded to Discord channel.");
     } catch (error) {
-      this.send(`[ERROR] ${error ?? "Something went wrong.."}`);
+      this.send(formatError(error));
     }
   }
 }

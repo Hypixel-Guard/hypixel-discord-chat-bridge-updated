@@ -1,5 +1,5 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
-const { titleCase } = require("../../contracts/helperFunctions.js");
+const { titleCase, formatError } = require("../../contracts/helperFunctions.js");
 const { getOverflowLevel } = require("../../../API/constants/skills.js");
 const { skillTables } = require("../../../API/constants/leveling.js");
 const { getSkills } = require("../../../API/stats/skills.js");
@@ -51,7 +51,7 @@ class OverflowCommand extends minecraftCommand {
 
       this.send(`${username}'s Overflow Skill Average: ${average.toFixed(2)} | ${formattedSkills.join(", ")}`);
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

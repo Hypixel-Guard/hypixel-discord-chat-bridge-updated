@@ -1,5 +1,5 @@
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
-const { delay } = require("../../contracts/helperFunctions.js");
+const { delay, formatError } = require("../../contracts/helperFunctions.js");
 
 class BooCommand extends minecraftCommand {
   /** @param {import("minecraft-protocol").Client} minecraft */
@@ -49,7 +49,7 @@ class BooCommand extends minecraftCommand {
         this.isOnCooldown = false;
       }, 30000);
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
       this.isOnCooldown = false;
     }
   }

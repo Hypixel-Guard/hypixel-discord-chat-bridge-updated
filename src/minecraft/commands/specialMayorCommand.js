@@ -1,4 +1,5 @@
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
+const { formatError } = require("../../contracts/helperFunctions.js");
 
 /*
 Derpy = 368 mod 24 = 8
@@ -78,7 +79,7 @@ class SpecialMayorCommand extends minecraftCommand {
       }
     } catch (error) {
       console.log(error);
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

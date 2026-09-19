@@ -1,5 +1,5 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
-const { formatNumber, titleCase } = require("../../contracts/helperFunctions.js");
+const { formatNumber, titleCase, formatError } = require("../../contracts/helperFunctions.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
 const { getEssence } = require("../../../API/stats/essence.js");
 
@@ -45,7 +45,7 @@ class EssenceCommand extends minecraftCommand {
     } catch (error) {
       console.error(error);
 
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

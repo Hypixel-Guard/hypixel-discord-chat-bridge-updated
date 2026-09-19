@@ -1,5 +1,5 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
-const { formatNumber, titleCase } = require("../../contracts/helperFunctions.js");
+const { formatNumber, titleCase, formatError } = require("../../contracts/helperFunctions.js");
 const { getSkillAverage } = require("../../../API/constants/skills.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
 const { getSkills } = require("../../../API/stats/skills.js");
@@ -45,7 +45,7 @@ class SkillsCommand extends minecraftCommand {
 
       this.send(`${username}'s Skill Average: ${skillAverage ?? 0} (${formattedSkills.join(", ")})`);
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

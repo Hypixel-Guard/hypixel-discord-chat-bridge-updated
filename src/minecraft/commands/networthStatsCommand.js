@@ -1,6 +1,6 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
-const { formatNumber, titleCase } = require("../../contracts/helperFunctions.js");
+const { formatNumber, titleCase, formatError } = require("../../contracts/helperFunctions.js");
 const { ProfileNetworthCalculator } = require("skyhelper-networth");
 
 const categoryNames = {
@@ -89,7 +89,7 @@ class NetworthStatsCommand extends minecraftCommand {
       await this.sendLong(`${username}'s Networth: ${formatNumber(networth)} » ${parts.join(" | ")}`);
     } catch (error) {
       console.error(error);
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

@@ -1,4 +1,4 @@
-const { formatNumber, delay, titleCase } = require("../../contracts/helperFunctions.js");
+const { formatNumber, delay, titleCase, formatError } = require("../../contracts/helperFunctions.js");
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
 const { getJacob } = require("../../../API/stats/jacob.js");
@@ -40,7 +40,7 @@ class JacobCommand extends minecraftCommand {
       const personalBests = Object.entries(jacobData.personalBests).map(([key, value]) => `${titleCase(key)}: ${formatNumber(value)}`);
       this.send(`${username}'s Personal Bests: ${personalBests.join(" | ")}`);
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

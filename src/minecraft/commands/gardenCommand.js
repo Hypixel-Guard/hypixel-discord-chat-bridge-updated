@@ -1,5 +1,6 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
+const { formatError } = require("../../contracts/helperFunctions.js");
 const { getGarden } = require("../../../API/stats/garden.js");
 
 class GardenCommand extends minecraftCommand {
@@ -62,7 +63,7 @@ class GardenCommand extends minecraftCommand {
       this.send(`${username}'s Garden ${gardenData.level.level} | Crop Milestones (avg ${gardenData.average}): ${milestones}`);
     } catch (error) {
       console.log(error);
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

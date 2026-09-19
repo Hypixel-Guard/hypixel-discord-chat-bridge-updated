@@ -1,5 +1,6 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
+const { formatError } = require("../../contracts/helperFunctions.js");
 
 class CatacombsCommand extends minecraftCommand {
   /** @param {import("minecraft-protocol").Client} minecraft */
@@ -34,7 +35,7 @@ class CatacombsCommand extends minecraftCommand {
       this.send(`${username}'s Skyblock Level: ${level}`);
     } catch (error) {
       console.error(error);
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

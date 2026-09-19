@@ -1,6 +1,6 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
-const { formatNumber } = require("../../contracts/helperFunctions.js");
+const { formatNumber, formatError } = require("../../contracts/helperFunctions.js");
 const { ProfileNetworthCalculator } = require("skyhelper-networth");
 
 class TrueNetWorthCommand extends minecraftCommand {
@@ -45,7 +45,7 @@ class TrueNetWorthCommand extends minecraftCommand {
       this.send(`${username}'s TRUE networth is ${trueNetworth}`);
     } catch (error) {
       console.error(error);
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

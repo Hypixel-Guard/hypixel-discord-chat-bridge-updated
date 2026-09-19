@@ -1,4 +1,5 @@
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
+const { formatError } = require("../../contracts/helperFunctions.js");
 // @ts-ignore
 const { get } = require("axios");
 
@@ -36,7 +37,7 @@ class EightBallCommand extends minecraftCommand {
 
       this.send(`${response.data.reading}`);
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

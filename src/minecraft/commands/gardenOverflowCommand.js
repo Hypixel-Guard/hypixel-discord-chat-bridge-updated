@@ -1,6 +1,7 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const { getCropOverflowLevel } = require("../../../API/constants/skills.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
+const { formatError } = require("../../contracts/helperFunctions.js");
 
 class GardenOverflowCommand extends minecraftCommand {
   /** @param {import("minecraft-protocol").Client} minecraft */
@@ -61,7 +62,7 @@ class GardenOverflowCommand extends minecraftCommand {
       this.send(`${username}'s Garden Overflow (avg ${average.toFixed(2)}): ${milestones}`);
     } catch (error) {
       console.log(error);
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

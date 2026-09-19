@@ -1,5 +1,5 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
-const { titleCase } = require("../../contracts/helperFunctions.js");
+const { titleCase, formatError } = require("../../contracts/helperFunctions.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
 
 class RenderCommand extends minecraftCommand {
@@ -43,7 +43,7 @@ class RenderCommand extends minecraftCommand {
       this.send(`${username}'s Active Pet: ${titleCase(activePet.tier)} ${titleCase(activePet.type)}`);
     } catch (error) {
       console.error(error);
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

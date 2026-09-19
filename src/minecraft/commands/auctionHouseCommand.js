@@ -1,4 +1,4 @@
-const { timeSince, formatNumber } = require("../../contracts/helperFunctions.js");
+const { timeSince, formatNumber, formatError } = require("../../contracts/helperFunctions.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
 const { uploadImage } = require("../../contracts/API/imgurAPI.js");
 const { getUUID } = require("../../contracts/API/mowojangAPI.js");
@@ -104,7 +104,7 @@ class AuctionHouseCommand extends minecraftCommand {
       this.send(`${player}'s Active Auctions: Check Discord Bridge for image. (Hypixel banned Imgur links from the chat)`);
     } catch (error) {
       console.log(error);
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

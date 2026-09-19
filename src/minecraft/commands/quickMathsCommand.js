@@ -1,5 +1,5 @@
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
-const { delay } = require("../../contracts/helperFunctions.js");
+const { delay, formatError } = require("../../contracts/helperFunctions.js");
 const config = require("../../../config.json");
 
 /**
@@ -88,7 +88,7 @@ class QuickMathsCommand extends minecraftCommand {
         }
       }, 10000);
     } catch (error) {
-      this.send(`${player} [ERROR] ${error || "Something went wrong.."}`);
+      this.send(`${player} ${formatError(error)}`);
     }
   }
 }

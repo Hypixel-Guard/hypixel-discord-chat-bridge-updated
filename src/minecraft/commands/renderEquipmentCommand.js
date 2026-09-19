@@ -1,5 +1,6 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
+const { formatError } = require("../../contracts/helperFunctions.js");
 const { uploadImage } = require("../../contracts/API/imgurAPI.js");
 const { renderLore } = require("../../contracts/renderItem.js");
 const { decodeData } = require("../../../API/utils/nbt.js");
@@ -55,7 +56,7 @@ class EquipmentCommand extends minecraftCommand {
 
       this.send(`${username}'s equipment has been rendered, check Discord for the images.`);
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

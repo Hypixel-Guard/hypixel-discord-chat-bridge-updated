@@ -1,6 +1,6 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const { getChocolateFactory } = require("../../../API/stats/chocolateFactory.js");
-const { formatNumber, titleCase } = require("../../contracts/helperFunctions.js");
+const { formatNumber, titleCase, formatError } = require("../../contracts/helperFunctions.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
 
 class ChocolateCommand extends minecraftCommand {
@@ -45,7 +45,7 @@ class ChocolateCommand extends minecraftCommand {
         )} | Total Chocolate: ${formatNumber(chocolateFactory.chocolate.total)} | Employees: ${employes}`
       );
     } catch (error) {
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }

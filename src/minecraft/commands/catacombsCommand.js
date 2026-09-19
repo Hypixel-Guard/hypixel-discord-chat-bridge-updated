@@ -1,6 +1,6 @@
 const { getLatestProfile } = require("../../../API/functions/getLatestProfile.js");
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
-const { formatNumber } = require("../../contracts/helperFunctions.js");
+const { formatNumber, formatError } = require("../../contracts/helperFunctions.js");
 const { getDungeons } = require("../../../API/stats/dungeons.js");
 
 class CatacombsCommand extends minecraftCommand {
@@ -47,7 +47,7 @@ class CatacombsCommand extends minecraftCommand {
       );
     } catch (error) {
       console.error(error);
-      this.send(`[ERROR] ${error}`);
+      this.send(formatError(error));
     }
   }
 }
