@@ -31,7 +31,7 @@ class AskCommand extends minecraftCommand {
       return;
     }
 
-    const cooldown = 60 * 60 * 1000;
+    const cooldown = 30 * 1000;
     const currentTime = Date.now();
 
     if (currentTime - lastQuestionTime < cooldown) {
@@ -48,7 +48,13 @@ class AskCommand extends minecraftCommand {
 
     lastQuestionTime = currentTime;
 
-    const answer = Math.random() < 0.5 ? "Yes" : "No";
+    const answers = [
+    "Input received.",
+    "Processing your request.",
+    "Query acknowledged."
+    ];
+
+    const answer = answers[Math.floor(Math.random() * answers.length)];
 
     this.send(answer);
   }
