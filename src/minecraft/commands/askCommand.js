@@ -1,5 +1,7 @@
 const minecraftCommand = require("../../contracts/minecraftCommand.js");
 
+let lastQuestionTime = 0;
+
 class AskCommand extends minecraftCommand {
   /** @param {import("minecraft-protocol").Client} minecraft */
   constructor(minecraft) {
@@ -29,7 +31,24 @@ class AskCommand extends minecraftCommand {
       return;
     }
 
-    const answer = Math.random() < 0.5 ? "✦ Couldn't get an answer right now. Try again." : "✦ AI isn't configured correctly right now.";
+    const cooldown = 60 * 60 * 1000;
+    const currentTime = Date.now();
+
+    if (currentTime - lastQuestionTime < cooldown) {
+      const secondsLeft = Math.ceil(
+        (cooldown - (currentTime - lastQuestionTime)) / 1000
+      );
+
+      this.send(
+        "✦ Wait " + secondsLeft + "s before asking again."
+      );
+
+      return;
+    }
+
+    lastQuestionTime = currentTime;
+
+    const answer = Math.random() < 0.5 ? "Yes" : "No";
 
     this.send(answer);
   }
