@@ -44,9 +44,22 @@ class FarmingweightCommand extends minecraftCommand {
         throw `${account.name} has no Farming Weight data.`;
       }
 
+      const [rankResponse, leaderboardResponse] = await Promise.all([
+        get(`${ELITE_API}/leaderboard/rank/farmingweight/${account.id}/${profile.profileId}`),
+        get(`${ELITE_API}/leaderboard/farmingweight?limit=1`)
+      ]);
+
       // Rank is -1 for players below the leaderboard's minimum weight
-      const rank = (await get(`${ELITE_API}/leaderboard/rank/farmingweight/${account.id}/${profile.profileId}`))?.data?.rank;
-      const rankText = rank > 0 ? `#${Number(rank).toLocaleString()}` : "Unranked";
+      const rank = rankResponse?.data?.rank;
+      const totalEntries = leaderboardResponse?.data?.maxEntries;
+      let rankText = "Unranked";
+      if (rank > 0) {
+        rankText = `#${Number(rank).toLocaleString()}`;
+        if (totalEntries > 0) {
+          // Round up so the top players show e.g. 0.01% instead of 0%
+          rankText += ` | Top ${Math.ceil((rank / totalEntries) * 10000) / 100}%`;
+        }
+      }
 
       this.send(
         `${account.name}'s Farming Weight: ${Number(profile.totalWeight).toLocaleString(undefined, { maximumFractionDigits: 2 })} | Rank: ${rankText} (${profile.profileName})`
