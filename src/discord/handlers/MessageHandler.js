@@ -79,42 +79,30 @@ class MessageHandler {
 
   async fetchReply(message) {
     try {
-      if (message.reference?.messageId === undefined || message.mentions === undefined) {
+      if (message.reference?.messageId === undefined) {
         return null;
       }
 
-      const reference = await message.channel.messages.fetch(message.reference.messageId);
+      const reference = await message.fetchReference();
 
-      const discUser = await message.guild.members.fetch(message.mentions.repliedUser.id);
-      const mentionedUserName = discUser.nickname ?? message.mentions.repliedUser.globalName;
-
-      if (config.discord.other.messageMode === "bot" && reference.embed !== null) {
-        const name = reference.embeds[0]?.author?.name;
-        if (name === undefined) {
-          return mentionedUserName;
+      if (reference.author.id === client.user.id) {
+        const embedName = reference.embeds[0]?.author?.name;
+        if (embedName) {
+          return embedName;
         }
 
-        return name;
+        const attachmentName = reference.attachments.first()?.name;
+        if (attachmentName) {
+          return attachmentName.split(".")[0];
+        }
       }
 
-      if (config.discord.other.messageMode === "minecraft" && reference.attachments !== null) {
-        const name = reference.attachments.values()?.next()?.value?.name;
-        if (name === undefined) {
-          return mentionedUserName;
-        }
-
-        return name.split(".")[0];
-      }
-
-      if (config.discord.other.messageMode === "webhook") {
-        if (reference.author.username === undefined) {
-          return mentionedUserName;
-        }
-
+      if (reference.webhookId) {
         return reference.author.username;
       }
 
-      return mentionedUserName ?? null;
+      const member = reference.member ?? (await message.guild.members.fetch(reference.author.id).catch(() => null));
+      return member?.displayName ?? reference.author.globalName ?? reference.author.username ?? null;
     } catch (error) {
       console.error(error);
       return null;
