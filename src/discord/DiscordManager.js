@@ -278,23 +278,33 @@ class DiscordManager extends CommunicationBridge {
     const chain = this.getToggleChain(channel.id);
     const key = `${mode}:${message}`;
 
+    let count = 1;
     const entry = chain.get(key);
     if (entry !== undefined) {
-      try {
-        return await this.editToggleMessage(entry, { fullMessage, username, message, color, count: entry.count + 1 });
-      } catch (error) {
-        // The message is gone (deleted, too old, ...) so start a fresh one for it.
-        console.error(error);
-        chain.delete(key);
+      count = entry.count + 1;
+
+      // Only edit in place while it is still the newest toggle, otherwise e.g. leave, join, leave would
+      // leave the "join" message at the bottom and show the player in the wrong state.
+      if ([...chain.keys()].pop() === key) {
+        try {
+          return await this.editToggleMessage(entry, { fullMessage, username, message, color, count });
+        } catch (error) {
+          // The message is gone (deleted, too old, ...) so start a fresh one for it.
+          console.error(error);
+        }
+      } else {
+        await this.deleteToggleMessage(entry).catch((error) => console.error(error));
       }
+
+      chain.delete(key);
     }
 
-    const sent = await this.sendToggleMessage({ fullMessage, username, message, color, channel, mode });
+    const sent = await this.sendToggleMessage({ fullMessage, username, message, color, channel, mode, count });
     if (sent === undefined) {
       return;
     }
 
-    chain.set(key, { ...sent, count: 1 });
+    chain.set(key, { ...sent, count });
 
     // Only a handful of players can realistically be flickering at once, keep the chain small.
     while (chain.size > 20) {
@@ -302,10 +312,10 @@ class DiscordManager extends CommunicationBridge {
     }
   }
 
-  async sendToggleMessage({ fullMessage, username, message, color, channel, mode }) {
+  async sendToggleMessage({ fullMessage, username, message, color, channel, mode, count = 1 }) {
     switch (mode) {
       case "bot": {
-        const sent = await channel.send({ embeds: [this.toggleEmbed({ message, color, username, count: 1 })] });
+        const sent = await channel.send({ embeds: [this.toggleEmbed({ message, color, username, count })] });
 
         return { mode, message: sent };
       }
@@ -325,7 +335,7 @@ class DiscordManager extends CommunicationBridge {
         const sent = await webhook.send({
           username: username,
           avatarURL: `https://www.mc-heads.net/avatar/${username}`,
-          embeds: [{ color: color, description: `${message}` }]
+          embeds: [{ color: color, description: `${message}${this.repeatSuffix(count)}` }]
         });
 
         return { mode, webhook: webhook, messageId: sent.id };
@@ -334,7 +344,7 @@ class DiscordManager extends CommunicationBridge {
       case "minecraft": {
         const sent = await channel.send({
           files: [
-            new AttachmentBuilder(await messageToImage(fullMessage), {
+            new AttachmentBuilder(await messageToImage(count > 1 ? `${fullMessage}§7${this.repeatSuffix(count)}` : fullMessage), {
               name: `${username}.png`
             })
           ]
@@ -370,6 +380,14 @@ class DiscordManager extends CommunicationBridge {
     }
 
     entry.count = count;
+  }
+
+  async deleteToggleMessage(entry) {
+    if (entry.mode === "webhook") {
+      return entry.webhook.deleteMessage(entry.messageId);
+    }
+
+    return entry.message.delete();
   }
 
   toggleEmbed({ message, color, username, count }) {
