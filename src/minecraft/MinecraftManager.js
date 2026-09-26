@@ -6,6 +6,7 @@ const ChatHandler = require("./handlers/ChatHandler.js");
 const CommandHandler = require("./CommandHandler.js");
 const config = require("../../config.json");
 const { cleanText } = require("../contracts/filter.js");
+const { suppressRepeatNotice } = require("../contracts/repeatNotice.js");
 const mineflayer = require("mineflayer");
 
 class MinecraftManager extends CommunicationBridge {
@@ -66,12 +67,11 @@ class MinecraftManager extends CommunicationBridge {
     }
 
     const officer = channel === config.discord.channels.officerChannel;
-    if (this.chatHandler.isCommand(message)) {
-      try {
-        this.chatHandler.command.handle(username, message, officer);
-      } catch (error) {
-        console.error(error);
-      }
+    const commandUsername = username;
+    const commandMessage = message;
+    const isCommand = this.chatHandler.isCommand(message);
+    if (isCommand) {
+      suppressRepeatNotice(600);
     }
 
     message = cleanText(message);
@@ -100,6 +100,15 @@ class MinecraftManager extends CommunicationBridge {
 
     setTimeout(() => {
       bot.removeListener("message", messageListener);
+
+      if (isCommand) {
+        try {
+          this.chatHandler.command.handle(commandUsername, commandMessage, officer);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
       if (successfullySent === true) {
         return;
       }

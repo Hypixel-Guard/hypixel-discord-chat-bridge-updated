@@ -1,6 +1,7 @@
 const { splitMessage, delay, generateID } = require("./helperFunctions.js");
 const { registerRelayOverride } = require("./relayOverrides.js");
 const { cleanText } = require("./filter.js");
+const { suppressRepeatNotice } = require("./repeatNotice.js");
 const config = require("../../config.json");
 
 /**
@@ -115,7 +116,8 @@ class minecraftCommand {
               }
             };
 
-            bot.once("message", listener);
+            bot.on("message", listener);
+            suppressRepeatNotice(600);
 
             if (relayAs !== undefined) {
               registerRelayOverride(message, relayAs);
@@ -131,6 +133,7 @@ class minecraftCommand {
         );
       };
 
+      const baseMessage = message;
       for (let i = 0; i < maxRetries; i++) {
         try {
           await sendMessage();
@@ -159,7 +162,7 @@ class minecraftCommand {
             await delay(100);
             const randomId = generateID(config.minecraft.bot.messageRepeatBypassLength);
             const maxLength = 256 - randomId.length - 3; // -3 for space
-            message = `${message.substring(0, maxLength)} - ${randomId}`;
+            message = `${baseMessage.substring(0, maxLength)} - ${randomId}`;
             continue;
           }
           throw error;

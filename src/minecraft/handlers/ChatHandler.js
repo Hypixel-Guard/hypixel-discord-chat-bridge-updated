@@ -1,6 +1,7 @@
 const { checkRequirements, generateEmbed } = require("../../discord/commands/requirementsCommand.js");
 const { replaceAllRanks, replaceVariables } = require("../../contracts/helperFunctions.js");
 const { consumeRelayOverride } = require("../../contracts/relayOverrides.js");
+const { isRepeatNoticeSuppressed } = require("../../contracts/repeatNotice.js");
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const updateCommand = require("../../discord/commands/updateCommand.js");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -244,6 +245,10 @@ class StateHandler extends eventHandler {
     }
 
     if (this.isRepeatMessage(message)) {
+      if (isRepeatNoticeSuppressed()) {
+        return;
+      }
+
       return client.channels.cache.get(config.discord.channels.guildChatChannel).send({
         embeds: [
           {
