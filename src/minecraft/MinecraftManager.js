@@ -5,12 +5,8 @@ const ErrorHandler = require("./handlers/ErrorHandler.js");
 const ChatHandler = require("./handlers/ChatHandler.js");
 const CommandHandler = require("./CommandHandler.js");
 const config = require("../../config.json");
+const { cleanText } = require("../contracts/filter.js");
 const mineflayer = require("mineflayer");
-const Filter = require("bad-words");
-
-const filter = new Filter();
-const fileredWords = config.discord.other.filterWords ?? "";
-filter.addWords(...fileredWords);
 
 class MinecraftManager extends CommunicationBridge {
   constructor(app) {
@@ -61,15 +57,6 @@ class MinecraftManager extends CommunicationBridge {
       return this.bot.chat(message);
     }
 
-    if (config.discord.other.filterMessages) {
-      try {
-        message = filter.clean(message);
-        username = filter.clean(username);
-      } catch (error) {
-        // Do nothing
-      }
-    }
-
     if (config.discord.other.stripEmojisFromUsernames) {
       try {
         username = username.replace(/:[\w\-_]+:/g, "");
@@ -78,9 +65,21 @@ class MinecraftManager extends CommunicationBridge {
       }
     }
 
+    const officer = channel === config.discord.channels.officerChannel;
+    if (this.chatHandler.isCommand(message)) {
+      try {
+        this.chatHandler.command.handle(username, message, officer);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    message = cleanText(message);
+    username = cleanText(username);
+
     message = replaceVariables(config.minecraft.bot.messageFormat, { username, message });
 
-    const chat = channel === config.discord.channels.officerChannel ? "/oc" : "/gc";
+    const chat = officer ? "/oc" : "/gc";
 
     if (replyingTo) {
       message = message.replace(username, `${username} replying to ${replyingTo}`);

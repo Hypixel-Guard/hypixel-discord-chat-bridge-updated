@@ -1,4 +1,5 @@
 const { Collection } = require("discord.js");
+const { cleanText } = require("../contracts/filter.js");
 const config = require("../../config.json");
 const axios = require("axios");
 const fs = require("fs");
@@ -53,7 +54,7 @@ class CommandHandler {
       }
       
       const chat = officer ? "oc" : "gc";
-      bot.chat(`/${chat} [SOOPY V2] ${message}`);
+      bot.chat(`/${chat} [SOOPY V2] ${cleanText(message)}`);
       console.minecraft(`${player} - [${command}] ${message}`);
       
       (async () => {
@@ -63,7 +64,7 @@ class CommandHandler {
           if (response?.data?.msg === undefined) {
             return bot.chat(`/${chat} [SOOPY V2] An error occured while running the command`);
           }
-          bot.chat(`/${chat} [SOOPY V2] ${response.data.msg}`);
+          bot.chat(`/${chat} [SOOPY V2] ${cleanText(response.data.msg)}`);
         } catch (e) {
           bot.chat(`/${chat} [SOOPY V2] ${e.cause ?? e.message ?? "Unknown error"}`);
         }

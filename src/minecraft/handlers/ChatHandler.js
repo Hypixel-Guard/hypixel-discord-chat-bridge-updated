@@ -625,6 +625,10 @@ class StateHandler extends eventHandler {
     if (this.isCommand(match.groups.message)) {
       const officer = match.groups.chatType.includes("Officer");
       if (this.isDiscordMessage(match.groups.message) === true) {
+        if (match.groups.username === this.bot.username) {
+          return;
+        }
+
         const { player, command } = this.getCommandData(match.groups.message);
 
         return this.command.handle(player, command, officer);

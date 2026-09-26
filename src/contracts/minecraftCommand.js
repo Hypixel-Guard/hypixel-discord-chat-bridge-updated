@@ -1,5 +1,6 @@
 const { splitMessage, delay, generateID } = require("./helperFunctions.js");
 const { registerRelayOverride } = require("./relayOverrides.js");
+const { cleanText } = require("./filter.js");
 const config = require("../../config.json");
 
 /**
@@ -72,6 +73,11 @@ class minecraftCommand {
   async send(message, maxRetries = 5, isErrorMessage = false, relayAs = undefined) {
     if (!bot?._client?.chat) {
       return;
+    }
+
+    message = cleanText(message);
+    if (typeof relayAs === "string") {
+      relayAs = cleanText(relayAs);
     }
 
     const startTime = Date.now();
