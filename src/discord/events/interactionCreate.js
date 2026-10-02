@@ -20,9 +20,7 @@ module.exports = {
         }
 
         console.discord(`${interaction.user.username} - [${interaction.commandName}]`);
-        if (command.opensModal !== true) {
-          await interaction.deferReply({ ephemeral: command.publicReply !== true }).catch(() => {});
-        }
+        await interaction.deferReply({ ephemeral: command.publicReply !== true }).catch(() => {});
         if (memberRoles.some((role) => config.discord.commands.blacklistRoles.includes(role))) {
           throw new HypixelDiscordChatBridgeError("You are blacklisted from the bot.");
         }
@@ -65,15 +63,6 @@ module.exports = {
         const embed = new SuccessEmbed(`Successfully accepted **${username}** into the guild.`);
 
         await interaction.followUp({ embeds: [embed] });
-      } else if (interaction.isModalSubmit()) {
-        const command = [...interaction.client.commands.values()].find((cmd) => cmd.modalCustomId === interaction.customId);
-        if (command === undefined || typeof command.handleModalSubmit !== "function") {
-          return;
-        }
-
-        console.discord(`${interaction.user.username} - [modal:${interaction.customId}]`);
-        await interaction.deferReply({ ephemeral: true }).catch(() => {});
-        await command.handleModalSubmit(interaction);
       }
     } catch (error) {
       console.error(error);
