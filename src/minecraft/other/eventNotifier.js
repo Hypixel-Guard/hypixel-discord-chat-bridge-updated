@@ -166,6 +166,8 @@ async function sendPowderNotification(eventBOT, eventData, isFirstCheck = false)
         if (eventData.timeRemaining) {
           message += `, ends in ${eventData.timeRemaining}`;
         }
+
+        eventBOT.send(message);
       }
    } else {
       if (!isFirstCheck && !powderConfig.quietMode) {

@@ -1,5 +1,18 @@
+const { describe, it, expect, beforeEach, jest: jestObject } = require("@jest/globals");
+
+jestObject.mock("../config.json", () => require("../config.example.json"), { virtual: true });
+jestObject.mock("../src/discord/commands/requirementsCommand.js", () => ({
+  checkRequirements: jestObject.fn(),
+  generateEmbed: jestObject.fn()
+}));
+jestObject.mock("../src/discord/commands/updateCommand.js", () => ({
+  updateRoles: jestObject.fn()
+}));
+jestObject.mock("../src/contracts/API/HypixelRebornAPI.js", () => ({
+  getGuild: jestObject.fn()
+}));
+
 const ChatHandler = require("../src/minecraft/handlers/ChatHandler.js");
-const { describe, it, expect, beforeEach } = require("@jest/globals");
 
 describe("ChatHandler", () => {
   describe("uncoloredRegex", () => {
