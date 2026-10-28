@@ -187,6 +187,9 @@ class MessageHandler {
       output = output ? `${attachments} ${output}` : attachments;
     }
 
+    // Links that did not become ImgPrev tokens never reach Minecraft chat.
+    output = output.replace(/https?:\/\/\S*[^\s.,!?;:)\]}'"]/gi, "[link]");
+
     // Replace IP Adresses with [Content Redacted]
     const IPAddressPattern = /(?:\d{1,3}\s*\s\s*){3}\d{1,3}/g;
     output = output.replaceAll(IPAddressPattern, "[Content Redacted]");

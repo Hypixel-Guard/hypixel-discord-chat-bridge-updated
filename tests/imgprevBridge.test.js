@@ -133,9 +133,10 @@ describe("Discord to Minecraft", () => {
     expect(sent[0]).not.toContain("klipy.com/gifs");
   });
 
-  it("relays the link as it was when no embed comes", async () => {
-    const sent = await relayToMinecraft(discordMessage({ content: "https://tenor.com/view/cat-12345" }));
-    expect(sent[0]).toContain("https://tenor.com/view/cat-12345");
+  it("never sends a link it could not turn into a token", async () => {
+    const sent = await relayToMinecraft(discordMessage({ content: "https://tenor.com/view/cat-12345 and http://example.com/a.png?x=1, see (https://example.com/page)" }));
+    expect(sent[0]).not.toMatch(/https?:/);
+    expect(sent[0]).toContain("[link] and [link], see ([link])");
   });
 
   it("splits long messages without cutting a token", async () => {
