@@ -644,8 +644,9 @@ class StateHandler extends eventHandler {
   }
 
   isDiscordMessage(message) {
+    // A relayed message always has text after the separator, so "gg>" or "ok »" typed by a player is ordinary chat.
     // An ImgPrev token ("<~…~>") at the start is the player's own image, not a "name >" relayed from Discord.
-    const isDiscordMessage = /^(?<username>(?!https?:\/\/)(?!<~[0-9A-Za-z-]+~>)[^\s»:>]+)\s*[»:>]\s*(?<message>.*)/;
+    const isDiscordMessage = /^(?<username>(?!https?:\/\/)(?!<~[0-9A-Za-z-]+~>)[^\s»:>]+)\s*[»:>]\s*(?<message>\S.*)/;
 
     const match = message.match(isDiscordMessage);
     if (match && ["Party", "Guild", "Officer"].includes(match.groups.username)) {
