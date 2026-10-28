@@ -644,7 +644,8 @@ class StateHandler extends eventHandler {
   }
 
   isDiscordMessage(message) {
-    const isDiscordMessage = /^(?<username>(?!https?:\/\/)[^\s»:>]+)\s*[»:>]\s*(?<message>.*)/;
+    // A relayed message always has text after the separator, so "gg>" or "ok »" typed by a player is ordinary chat.
+    const isDiscordMessage = /^(?<username>(?!https?:\/\/)[^\s»:>]+)\s*[»:>]\s*(?<message>\S.*)/;
 
     const match = message.match(isDiscordMessage);
     if (match && ["Party", "Guild", "Officer"].includes(match.groups.username)) {
