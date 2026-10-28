@@ -3,6 +3,7 @@ const { unemojify } = require("node-emoji");
 const { LINK, convertAll, replaceLinks, trimTrailing } = require("../../contracts/imgprev/linkConverter.js");
 const { settings, toMinecraft, emojiToken, stickerToken, attachmentToken, embedToken, splitMessage } = require("../../contracts/imgprev/bridgeMedia.js");
 const TokenCodec = require("../../contracts/imgprev/tokenCodec.js");
+const { blockLinks } = require("../../contracts/linkFilter.js");
 
 // Links whose image or GIF only shows up once Discord has embedded them (its GIF picker posts Klipy or Tenor pages),
 // worth waiting a moment for before the message is relayed.
@@ -187,8 +188,8 @@ class MessageHandler {
       output = output ? `${attachments} ${output}` : attachments;
     }
 
-    // Links that did not become ImgPrev tokens never reach Minecraft chat.
-    output = output.replace(/https?:\/\/\S*[^\s.,!?;:)\]}'"]/gi, "[link]");
+    // Links that did not become ImgPrev tokens never reach Minecraft chat, except Hypixel links.
+    output = blockLinks(output);
 
     // Replace IP Adresses with [Content Redacted]
     const IPAddressPattern = /(?:\d{1,3}\s*\s\s*){3}\d{1,3}/g;
