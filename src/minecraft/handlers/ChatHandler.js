@@ -644,7 +644,8 @@ class StateHandler extends eventHandler {
   }
 
   isDiscordMessage(message) {
-    const isDiscordMessage = /^(?<username>(?!https?:\/\/)[^\s»:>]+)\s*[»:>]\s*(?<message>.*)/;
+    // An ImgPrev token ("<~…~>") at the start is the player's own image, not a "name >" relayed from Discord.
+    const isDiscordMessage = /^(?<username>(?!https?:\/\/)(?!<~[0-9A-Za-z-]+~>)[^\s»:>]+)\s*[»:>]\s*(?<message>.*)/;
 
     const match = message.match(isDiscordMessage);
     if (match && ["Party", "Guild", "Officer"].includes(match.groups.username)) {

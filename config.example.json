@@ -102,6 +102,13 @@
       "autoLimbo": false
     }
   },
+  "imagePreview": {
+    "enabled": true,
+    "discordToMinecraft": true,
+    "minecraftToDiscord": true,
+    "keepEmojiNames": false,
+    "embedWaitMs": 2500
+  },
   "web": {
     "enabled": false,
     "port": 1439,
