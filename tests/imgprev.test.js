@@ -12,7 +12,7 @@ const BridgeMedia = require("../src/contracts/imgprev/bridgeMedia.js");
 const VECTORS = fs
   .readFileSync(path.join(__dirname, "fixtures", "imgprev-token-vectors.tsv"), "utf8")
   .trim()
-  .split("\n")
+  .split(/\r?\n/) // git may check the file out with CRLF line endings
   .map((line) => {
     const [url, token = "", v1 = "", site = "", media = "", expires = ""] = line.split("\t");
     return { url, token, v1, site, media, expires };
