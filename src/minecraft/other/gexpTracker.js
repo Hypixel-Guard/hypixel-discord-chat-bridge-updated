@@ -68,11 +68,15 @@ function getApiKey() {
 }
 
 function getBotUuid() {
-  if (!bot?.uuid) {
-    throw new HypixelDiscordChatBridgeError("The Minecraft bot is not ready to retrieve guild GEXP.");
+  const uuid = bot?.player?.uuid;
+
+  if (!uuid) {
+    throw new HypixelDiscordChatBridgeError(
+      "The Minecraft bot is not ready to retrieve guild GEXP."
+    );
   }
 
-  return bot.uuid.replaceAll("-", "");
+  return uuid.replaceAll("-", "");
 }
 
 function apiError(error) {
