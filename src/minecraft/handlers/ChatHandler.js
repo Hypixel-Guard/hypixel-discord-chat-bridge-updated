@@ -4,6 +4,7 @@ const { consumeRelayOverride } = require("../../contracts/relayOverrides.js");
 const { isRepeatNoticeSuppressed } = require("../../contracts/repeatNotice.js");
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const updateCommand = require("../../discord/commands/updateCommand.js");
+const { checkGuildCapacity } = require("../other/guildCapacityMonitor.js");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const hypixel = require("../../contracts/API/HypixelRebornAPI.js");
 const { getUUID } = require("../../contracts/API/mowojangAPI.js");
@@ -121,6 +122,9 @@ class StateHandler extends eventHandler {
     if (this.isJoinMessage(message)) {
       const username = this.getUsernameFromEventMessage(message);
       setTimeout(() => this.tryToUpdateUser(username), 15000);
+      setTimeout(() => {
+        checkGuildCapacity().catch((error) => console.error(`Unable to check guild capacity: ${error.message}`));
+      }, 2000);
 
       await delay(1000);
       bot.chat(`/gc ${replaceVariables(messages.guildJoinMessage, { prefix: config.minecraft.bot.prefix })} | by @duckysolucky`);

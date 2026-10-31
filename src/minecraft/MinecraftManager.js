@@ -4,6 +4,8 @@ const StateHandler = require("./handlers/StateHandler.js");
 const ErrorHandler = require("./handlers/ErrorHandler.js");
 const ChatHandler = require("./handlers/ChatHandler.js");
 const CommandHandler = require("./CommandHandler.js");
+const { refreshGuildMemberCount } = require("./other/guildCapacityMonitor.js");
+const { startGexpTracking } = require("./other/gexpTracker.js");
 const config = require("../../config.json");
 const { cleanText } = require("../contracts/filter.js");
 const { suppressRepeatNotice } = require("../contracts/repeatNotice.js");
@@ -33,6 +35,11 @@ class MinecraftManager extends CommunicationBridge {
       require("./other/eventNotifier.js");
       require("./other/skyblockNotifier.js");
       require("./other/alphaPlayerCountTracker.js");
+    });
+
+    this.bot.once("spawn", () => {
+      refreshGuildMemberCount().catch((error) => console.error(`Unable to cache the guild member count: ${error.message}`));
+      startGexpTracking();
     });
   }
 

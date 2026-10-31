@@ -11,6 +11,7 @@ class Application {
     if (!existsSync("./data/")) mkdirSync("./data/", { recursive: true });
     if (!existsSync("./data/linked.json")) writeFileSync("./data/linked.json", JSON.stringify({}));
     if (!existsSync("./data/inactivity.json")) writeFileSync("./data/inactivity.json", JSON.stringify({}));
+    if (!existsSync("./data/gexpHistory.json")) writeFileSync("./data/gexpHistory.json", JSON.stringify({ version: 1, updatedAt: null, members: {} }));
   }
 
   async register() {

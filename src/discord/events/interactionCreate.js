@@ -55,6 +55,14 @@ module.exports = {
 
         await command.execute(interaction);
       } else if (interaction.isButton()) {
+        const componentCommand = [...interaction.client.commands.values()].find(
+          (command) => typeof command.isGexpButton === "function" && command.isGexpButton(interaction.customId)
+        );
+        if (componentCommand) {
+          await componentCommand.handleButton(interaction, isModerator(interaction));
+          return;
+        }
+
         await interaction.deferReply({ ephemeral: true }).catch(() => {});
         if (interaction.customId !== "joinRequestAccept") return;
         const username = interaction?.message?.embeds?.[0]?.title.split(" ")?.[0] || undefined;

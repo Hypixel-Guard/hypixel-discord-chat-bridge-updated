@@ -43,6 +43,20 @@
         }
       ]
     },
+    "gexpTracking": {
+      "enabled": true,
+      "dailyUpdateHourUtc": 0,
+      "activityThresholds": {
+        "high": 10000,
+        "moderate": 3000
+      },
+      "kickThresholds": {
+        "daily": 7000,
+        "weekly": 50000,
+        "biweekly": 100000,
+        "monthly": 200000
+      }
+    },
     "skyblockEventsNotifications": {
       "enabled": true,
       "notifiers": {
@@ -100,6 +114,10 @@
       "filterWords": ["dox", "doxx", "doxed", "doxxed", "doxing", "doxxing", "doxes", "doxxes"],
       "joinMessage": true,
       "autoLimbo": false
+    },
+    "guildCapacityAlert": {
+      "enabled": false,
+      "moderatorUserId": "MODERATOR_USER_ID"
     }
   },
   "web": {
