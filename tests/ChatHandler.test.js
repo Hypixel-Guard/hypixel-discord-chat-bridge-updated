@@ -117,6 +117,35 @@ describe("ChatHandler", () => {
         expect(chatHandler.isDiscordMessage(message)).toBe(false);
       }
     });
+
+    it("should return false for a message that only ends in a separator", () => {
+      // A relayed Discord message always has text after "name »", so these are ordinary chat.
+      const messages = ["TestMessage>", "AnotherTest >", "gg:", "ok »", "TestMessage> ", "x >   "];
+      for (const message of messages) {
+        expect(chatHandler.isDiscordMessage(message)).toBe(false);
+      }
+    });
+  });
+
+  describe("guild chat relay", () => {
+    const relayed = async (line) => {
+      const events = [];
+      const handler = new ChatHandler({ broadcastMessage: (event) => events.push(event), broadcastCleanEmbed() {}, broadcastHeadedEmbed() {} }, { handle() {} });
+      handler.bot = { username: "HG_Bridge", chat() {} };
+      await handler.onMessage({ toString: () => line, toMotd: () => line });
+      return events.map((event) => event.message);
+    };
+
+    it("relays messages that end in a separator, as well as ordinary ones", async () => {
+      expect(await relayed("Guild > [MVP+] ThyRandomOne [CMDR]: TestMessage>")).toEqual(["TestMessage>"]);
+      expect(await relayed("Guild > [MVP+] ThyRandomOne [CMDR]: AnotherTest >")).toEqual(["AnotherTest >"]);
+      expect(await relayed("Guild > [MVP+] ThyRandomOne [CMDR]: random test message>")).toEqual(["random test message>"]);
+      expect(await relayed("Guild > [MVP+] ThyRandomOne [CMDR]: i see")).toEqual(["i see"]);
+    });
+
+    it("still doesn't send the bot's own relayed Discord messages back", async () => {
+      expect(await relayed("Guild > [VIP] HG_Bridge [ELITE]: chazz » test")).toEqual([]);
+    });
   });
 
   describe("isCommand", () => {

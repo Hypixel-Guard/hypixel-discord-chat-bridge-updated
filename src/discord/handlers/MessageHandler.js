@@ -1,5 +1,13 @@
 const config = require("../../../config.json");
 const { unemojify } = require("node-emoji");
+const { LINK, convertAll, replaceLinks, trimTrailing } = require("../../contracts/imgprev/linkConverter.js");
+const { settings, toMinecraft, emojiToken, stickerToken, attachmentToken, embedToken, splitMessage } = require("../../contracts/imgprev/bridgeMedia.js");
+const TokenCodec = require("../../contracts/imgprev/tokenCodec.js");
+const { blockLinks } = require("../../contracts/linkFilter.js");
+
+// Links whose image or GIF only shows up once Discord has embedded them (its GIF picker posts Klipy or Tenor pages),
+// worth waiting a moment for before the message is relayed.
+const EMBEDDED_MEDIA_HOSTS = ["klipy.com", "www.klipy.com", "tenor.com", "www.tenor.com", "giphy.com", "www.giphy.com", "gph.is", "imgur.com", "www.imgur.com"];
 
 // Discord user IDs that are always shown under a fixed name when running bot commands, regardless of nickname
 const commandNameOverrides = {
@@ -24,7 +32,7 @@ class MessageHandler {
         return;
       }
 
-      const content = this.stripDiscordContent(message).trim();
+      const content = (await this.stripDiscordContent(message)).trim();
       if (content.length === 0 && message.attachments.size === 0) {
         return;
       }
@@ -51,8 +59,9 @@ class MessageHandler {
       }
 
       if (messageData.message.length > 220) {
-        const messageParts = messageData.message.match(/.{1,200}/g);
-        if (messageParts === null) {
+        // Split at spaces, so an ImgPrev token is never cut in two.
+        const messageParts = splitMessage(messageData.message, 200);
+        if (messageParts.length === 0) {
           return;
         }
 
@@ -109,7 +118,8 @@ class MessageHandler {
     }
   }
 
-  stripDiscordContent(message) {
+  async stripDiscordContent(message) {
+    const images = toMinecraft();
     let output = message.content
       .split("\n")
       .map((part) => {
@@ -117,6 +127,10 @@ class MessageHandler {
         return part.length === 0 ? "" : part.replace(/@(everyone|here)/gi, "").trim() + " ";
       })
       .join("");
+
+    if (images) {
+      output = await this.linksToTokens(message, output);
+    }
 
     const hasMentions = /<@|<#|<:|<a:/.test(message);
     if (hasMentions) {
@@ -139,18 +153,32 @@ class MessageHandler {
       output = output.replace(channelMentionPattern, replaceChannelMention);
 
       // Replace <:KEKW:628249422253391902> with :KEKW: || Replace <a:KEKW:628249422253391902> with :KEKW:
-      const emojiMentionPattern = /<a?:(\w+):\d+>/g;
-      output = output.replace(emojiMentionPattern, ":$1:");
+      // With image previews on, each becomes an ImgPrev token instead (after :KEKW: with keepEmojiNames).
+      const emojiMentionPattern = /<(a?):(\w+):(\d+)>/g;
+      output = output.replace(emojiMentionPattern, (match, animated, name, id) => {
+        const token = images ? emojiToken(id, animated === "a") : null;
+        if (token === null) {
+          return `:${name}:`;
+        }
+
+        return settings().keepEmojiNames ? `:${name}: ${token}` : token;
+      });
     }
 
     if (message.stickers.size > 0) {
       const sticker = message.stickers.first();
-      output = output ? `[${sticker.name}] ${output}` : `[${sticker.name}]`;
+      const shown = (images ? stickerToken(sticker) : null) ?? `[${sticker.name}]`;
+      output = output ? `${shown} ${output}` : shown;
     }
 
     if (message.attachments.size > 0) {
       const attachments = [...message.attachments.values()]
         .map((attachment) => {
+          const token = images ? attachmentToken(attachment) : null;
+          if (token !== null) {
+            return token;
+          }
+
           const dot = attachment.name.lastIndexOf(".");
           const clean = (dot !== -1 ? attachment.name.slice(0, dot) : attachment.name).replace(/\./g, "_");
           return `[${clean}]`;
@@ -160,6 +188,9 @@ class MessageHandler {
       output = output ? `${attachments} ${output}` : attachments;
     }
 
+    // Links that did not become ImgPrev tokens never reach Minecraft chat, except Hypixel links.
+    output = blockLinks(output);
+
     // Replace IP Adresses with [Content Redacted]
     const IPAddressPattern = /(?:\d{1,3}\s*\s\s*){3}\d{1,3}/g;
     output = output.replaceAll(IPAddressPattern, "[Content Redacted]");
@@ -167,6 +198,56 @@ class MessageHandler {
     output = unemojify(output);
 
     return output;
+  }
+
+  /**
+   * Image links become ImgPrev tokens. Links that only show an image once Discord embeds them (GIF picker and GIF
+   * site pages) take the token of the embed's GIF, waiting briefly for Discord to add the embed.
+   */
+  async linksToTokens(message, text) {
+    text = await convertAll(text);
+
+    const links = [...text.matchAll(LINK)].map(([link]) => trimTrailing(link));
+    if (links.length === 0) {
+      return text;
+    }
+
+    const waitFor = links.some((link) => EMBEDDED_MEDIA_HOSTS.includes(TokenCodec.parseHttps(link)?.host));
+    const embeds = waitFor ? await this.awaitEmbeds(message) : message.embeds;
+    const tokens = new Map();
+    for (const link of links) {
+      // Discord keeps the link as posted in the embed's url; with one link and one embed they go together anyway.
+      const embed = embeds.find((e) => e.url === link) ?? (links.length === 1 && embeds.length === 1 ? embeds[0] : undefined);
+      const token = embed === undefined ? null : embedToken(embed);
+      if (token !== null) {
+        tokens.set(link, token);
+      }
+    }
+
+    return replaceLinks(text, (link) => tokens.get(link) ?? null);
+  }
+
+  /** The message's embeds, once Discord has added them (it does so in an update just after the message) or the wait runs out. */
+  awaitEmbeds(message) {
+    if (message.embeds.length > 0) {
+      return Promise.resolve(message.embeds);
+    }
+
+    return new Promise((resolve) => {
+      const finish = () => {
+        clearTimeout(timer);
+        message.client.off("messageUpdate", onUpdate);
+        resolve(message.embeds);
+      };
+      const onUpdate = (oldMessage, newMessage) => {
+        if (newMessage.id === message.id && newMessage.embeds.length > 0) {
+          message = newMessage;
+          finish();
+        }
+      };
+      const timer = setTimeout(finish, settings().embedWaitMs);
+      message.client.on("messageUpdate", onUpdate);
+    });
   }
 
   shouldBroadcastMessage(message) {

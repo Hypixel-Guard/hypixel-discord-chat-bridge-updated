@@ -39,7 +39,12 @@ class TrueNetWorthCommand extends minecraftCommand {
         return this.send(`${username} has an Inventory API off!`);
       }
 
-      const multiplier = rawUsername.toLowerCase() === "thyrandomone" ? 2.5 : 0.75;
+      const multiplier = [
+        "thyrandomone",
+        "floor7sweat",
+        "paradox_64",
+        "hg_bridge"
+      ].includes(rawUsername.toLowerCase()) ? 2.5 : 0.75;
       const trueNetworth = formatNumber(networthData.networth * multiplier);
 
       this.send(`${username}'s TRUE networth is ${trueNetworth}`);

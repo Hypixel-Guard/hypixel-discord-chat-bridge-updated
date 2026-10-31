@@ -297,6 +297,26 @@ The joinMessage is ability to toggle join and leave message being sent to the di
 
 The autoLimbo is ability to toggle if the bot is sent to Limbo or stays in public lobbies.
 
+### Image Previews
+
+Images, GIFs, custom emoji and stickers sent in Discord reach Minecraft as [ImgPrev](https://github.com/CJWM-Dev/imgprev) tokens such as `<~GXJtM2nNFCzT3etvzOBK~>`.
+Players with the ImgPrev mod see a label such as `[▶ GIF]` and can hover over it to see the image. Players without the mod see the token as text. Tokens that players
+send in guild chat come back to Discord as the images they stand for.
+
+- Image attachments, custom emoji, and PNG, APNG and GIF stickers become tokens. Videos, other files and Lottie stickers keep their `[name]`.
+- Image links on supported sites (Giphy, Tenor, Imgur, Klipy, Gyazo, Postimages, ImgBB, Catbox and Discord) become tokens.
+- Links from Discord's GIF picker (Klipy and Tenor pages) become the GIF, which the bot reads from the embed Discord adds just after the message.
+- In Discord, tokens become links to their images, and up to four images show with the message. Custom emoji that the bot can use are posted as emoji. Discord attachment
+  links stop working after about a day and are then marked `(expired)`.
+
+| Option               | Default | What it does                                                                       |
+| -------------------- | ------- | ---------------------------------------------------------------------------------- |
+| `enabled`            | `true`  | Turns image previews on or off in both directions                                  |
+| `discordToMinecraft` | `true`  | Sends Discord images to Minecraft as tokens                                        |
+| `minecraftToDiscord` | `true`  | Shows tokens from Minecraft as images in Discord                                   |
+| `keepEmojiNames`     | `false` | Sends `:name:` before each custom emoji's token, for players without the mod       |
+| `embedWaitMs`        | `2500`  | How long to wait, in milliseconds, for Discord to embed a GIF link before relaying |
+
 ### Commands
 
 `< >` = Required arguments, `[ ]` = Optional arguments

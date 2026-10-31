@@ -8,6 +8,7 @@ const CommandHandler = require("./CommandHandler.js");
 const config = require("../../config.json");
 const fs = require("fs");
 const { ErrorEmbed } = require("../contracts/embedHandler.js");
+const { toDiscord, mediaInText, replaceTokens } = require("../contracts/imgprev/bridgeMedia.js");
 
 class DiscordManager extends CommunicationBridge {
   constructor(app) {
@@ -132,11 +133,12 @@ class DiscordManager extends CommunicationBridge {
     this.breakToggleChain(channel.id);
 
     switch (mode) {
-      case "bot":
+      case "bot": {
+        const images = this.mediaEmbeds(message);
         await channel.send({
           embeds: [
             {
-              description: message,
+              description: this.withMedia(message, false),
               color: this.hexToDec(color),
               timestamp: new Date(),
               footer: {
@@ -145,8 +147,10 @@ class DiscordManager extends CommunicationBridge {
               author: {
                 name: username,
                 icon_url: `https://www.mc-heads.net/avatar/${username}`
-              }
-            }
+              },
+              ...images[0]
+            },
+            ...images.slice(1)
           ]
         });
 
@@ -157,6 +161,7 @@ class DiscordManager extends CommunicationBridge {
         }
 
         break;
+      }
 
       case "webhook":
         message = this.cleanMessage(message);
@@ -170,7 +175,8 @@ class DiscordManager extends CommunicationBridge {
         }
 
         this.app.discord.webhook.send({
-          content: message,
+          content: this.withMedia(message, false),
+          embeds: this.mediaEmbeds(message),
           username: username,
           avatarURL: `https://www.mc-heads.net/avatar/${username}`
         });
@@ -183,11 +189,15 @@ class DiscordManager extends CommunicationBridge {
 
         await channel.send({
           files: [
-            new AttachmentBuilder(await messageToImage(message, username), {
+            new AttachmentBuilder(await messageToImage(this.withLabels(message), username), {
               name: `${username}.png`
             })
           ]
         });
+
+        if (this.mediaEmbeds(message).length > 0) {
+          channel.send({ embeds: this.mediaEmbeds(message) });
+        }
 
         if (message.includes("https://")) {
           const links = message.match(/https?:\/\/[^\s]+/g).join("\n");
@@ -202,7 +212,7 @@ class DiscordManager extends CommunicationBridge {
         }
 
         await channel.send({
-          content: message
+          content: this.withMedia(message, true)
         });
         break;
 
@@ -442,6 +452,51 @@ class DiscordManager extends CommunicationBridge {
     }
 
     return parseInt(hex.replace("#", ""), 16);
+  }
+
+  /** A custom emoji the bot can post itself, rather than linking to its image. */
+  usableEmoji(media) {
+    return media.emoji === null ? undefined : this.client?.emojis?.cache.get(media.emoji.id);
+  }
+
+  /**
+   * message with each ImgPrev token as Discord shows it: an emoji the bot can use, a link to the image (plain, or
+   * masked behind its label), or the label marked expired for Discord attachment links that no longer work.
+   */
+  withMedia(message, plain) {
+    if (!toDiscord()) {
+      return message;
+    }
+
+    return replaceTokens(message, (media) => {
+      const emoji = this.usableEmoji(media);
+      if (emoji !== undefined) {
+        return emoji.toString();
+      }
+
+      if (media.expired || media.url === null) {
+        return media.expired ? `${media.label} (expired)` : media.label;
+      }
+
+      return plain ? media.url : `[${media.label.slice(1, -1)}](${media.url})`;
+    });
+  }
+
+  /** message with each ImgPrev token as its label, "[▶ GIF]", for the rendered Minecraft-style image. */
+  withLabels(message) {
+    return toDiscord() ? replaceTokens(message, (media) => media.label) : message;
+  }
+
+  /** The images behind message's tokens as up to four embeds, which Discord shows together as one gallery. */
+  mediaEmbeds(message) {
+    if (!toDiscord()) {
+      return [];
+    }
+
+    const shown = mediaInText(message)
+      .filter((media) => media.url !== null && !media.expired && this.usableEmoji(media) === undefined)
+      .slice(0, 4);
+    return shown.map((media) => ({ url: shown[0].url, image: { url: media.url } }));
   }
 
   cleanMessage(message) {
