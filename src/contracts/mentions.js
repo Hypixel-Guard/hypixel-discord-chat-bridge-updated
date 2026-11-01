@@ -20,9 +20,10 @@ const bare = (uuid) => String(uuid).replace(/-/g, "").toLowerCase();
 /**
  * Discord ids of the mentioned names that are guild members with a linked Discord account.
  * @param {string[]} names
- * @param {{ getMemberUuids: () => Promise<string[]>, getUuid: (name: string) => Promise<string>, linked: Record<string, string>, onSkip?: (name: string, reason: string) => void }} deps
+ * @param {{ getMemberUuids: () => Promise<string[]>, getUuid: (name: string) => Promise<string>, linked: Record<string, string>, onSkip?: (name: string, reason: string) => void, findDiscordId?: (uuid: string) => Promise<string | undefined>, isInServer?: (discordId: string) => Promise<boolean> }} deps
+ * `findDiscordId` is the fallback for members missing from `linked`, e.g. via the Discord name set on their Hypixel profile.
  */
-async function resolveMentions(names, { getMemberUuids, getUuid, linked, onSkip = () => {} }) {
+async function resolveMentions(names, { getMemberUuids, getUuid, linked, onSkip = () => {}, findDiscordId = async () => undefined, isInServer = async () => true }) {
   if (names.length === 0) {
     return [];
   }
@@ -42,10 +43,23 @@ async function resolveMentions(names, { getMemberUuids, getUuid, linked, onSkip 
 
     if (members.has(uuid) === false) {
       onSkip(name, "not in the guild");
-    } else if (linkedByUuid[uuid] === undefined) {
-      onSkip(name, "has no linked Discord account");
     } else {
-      ids.add(linkedByUuid[uuid]);
+      let id = linkedByUuid[uuid];
+      if (id === undefined) {
+        try {
+          id = await findDiscordId(uuid);
+        } catch {
+          // treated like no match
+        }
+      }
+
+      if (id === undefined) {
+        onSkip(name, "has no linked Discord account");
+      } else if ((await isInServer(id)) === false) {
+        onSkip(name, "isn't in the Discord server");
+      } else {
+        ids.add(id);
+      }
     }
   }
 

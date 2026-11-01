@@ -663,6 +663,8 @@ class StateHandler extends eventHandler {
         getMemberUuids: () => hypixel.getGuild("player", this.bot.username).then((guild) => guild.members.map((member) => member.uuid)),
         getUuid: getUUID,
         linked: JSON.parse(readFileSync("data/linked.json").toString()),
+        findDiscordId: (uuid) => this.findDiscordIdFromHypixel(uuid),
+        isInServer: (discordId) => this.isInDiscordServer(discordId),
         onSkip: (name, reason) => console.log(`Not pinging @${name} for ${username}: ${reason}`)
       });
 
@@ -672,6 +674,31 @@ class StateHandler extends eventHandler {
     } catch (error) {
       console.error(`Failed to ping mentioned guild members: ${error}`);
     }
+  }
+
+  async isInDiscordServer(discordId) {
+    const server = client.channels.cache.get(config.discord.channels.guildChatChannel)?.guild;
+    if (server === undefined) {
+      return false;
+    }
+
+    return server.members.fetch(discordId).then(
+      () => true,
+      () => false
+    );
+  }
+
+  /** The server member whose Discord username is the one set on the player's Hypixel profile, if any. */
+  async findDiscordIdFromHypixel(uuid) {
+    const { socialMedia } = await hypixel.getPlayer(uuid);
+    const discordName = socialMedia?.find((media) => media.id === "DISCORD")?.link?.toLowerCase();
+    if (!discordName) {
+      return undefined;
+    }
+
+    const server = client.channels.cache.get(config.discord.channels.guildChatChannel)?.guild;
+    const found = await server?.members.fetch({ query: discordName, limit: 10 });
+    return found?.find((member) => member.user.username.toLowerCase() === discordName)?.id;
   }
 
   isDiscordMessage(message) {

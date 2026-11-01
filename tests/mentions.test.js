@@ -26,6 +26,18 @@ describe("resolveMentions", () => {
     expect(await resolveMentions(["Steve", "Alex", "Herobrine", "Nobody"], deps)).toEqual(["111"]);
   });
 
+  it("falls back to findDiscordId for members that aren't linked", async () => {
+    const findDiscordId = async (uuid) => (uuid === "bbbb" ? "222" : undefined);
+    expect(await resolveMentions(["Alex"], { ...deps, findDiscordId })).toEqual(["222"]);
+    expect(await resolveMentions(["Alex"], { ...deps, findDiscordId: () => Promise.reject(new Error("api down")) })).toEqual([]);
+  });
+
+  it("doesn't ping people who aren't in the Discord server", async () => {
+    const isInServer = async (id) => id !== "111";
+    expect(await resolveMentions(["Steve"], { ...deps, isInServer })).toEqual([]);
+    expect(await resolveMentions(["Alex"], { ...deps, findDiscordId: async () => "222", isInServer })).toEqual(["222"]);
+  });
+
   it("skips the guild lookup when nobody is mentioned", async () => {
     expect(await resolveMentions([], { ...deps, getMemberUuids: () => Promise.reject(new Error("called")) })).toEqual([]);
   });
