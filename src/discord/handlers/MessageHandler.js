@@ -14,6 +14,11 @@ const commandNameOverrides = {
   "608284610169798663": "thyrandomone"
 };
 
+
+const minecraftNameOverrides = {
+  "369587006155784193": "bleak"
+};
+
 class MessageHandler {
   constructor(discord, command) {
     this.discord = discord;
@@ -38,7 +43,7 @@ class MessageHandler {
       }
 
       const isCommand = content.startsWith(config.minecraft.bot.prefix);
-      const username = (isCommand ? commandNameOverrides[message.author.id] : undefined) ?? message.member.displayName ?? message.author.username;
+      const username = (isCommand ? commandNameOverrides[message.author.id] : undefined) ?? minecraftNameOverrides[message.author.id] ?? message.member.displayName ?? message.author.username;
       if (username === undefined || username.length === 0) {
         return;
       }

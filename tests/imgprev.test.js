@@ -69,6 +69,36 @@ describe("ImgPrev token port", () => {
     });
   });
 
+  describe("Tenor MP4 and Discord proxy links", () => {
+    const MP4 = "https://media.tenor.com/wQnHMN5pJXAAAAPo/mynameisgus-gusfring.mp4";
+
+    it("previews a Tenor MP4 link as its post's full-size GIF", () => {
+      const gif = TokenCodec.encode("https://media.tenor.com/wQnHMN5pJXAAAAAC/x.gif");
+      expect(gif).not.toBeNull();
+      expect(TokenCodec.encode(MP4)).toBe(gif);
+      expect(TokenCodec.encode("https://media.tenor.com/1S3s5iesWX0AAAAC/x.mp4")).toBeNull(); // only the MP4 rendition
+    });
+
+    it("unwraps Discord's proxy links to the link they carry", () => {
+      const proxy = "https://images-ext-1.discordapp.net/external/D5PqpD_DY0rKsf78ftptjAK41ixXHdszruMpBrTXNsI/https/";
+      expect(TokenCodec.encode(`${proxy}media.tenor.com/wQnHMN5pJXAAAAPo/mynameisgus-gusfring.mp4`)).toBe(TokenCodec.encode(MP4));
+      expect(TokenCodec.encode("https://images-ext-2.discordapp.net/external/sig/https/i.imgur.com/AbC12xY.png?width=400&height=300")).toBe(
+        TokenCodec.encode("https://i.imgur.com/AbC12xY.png")
+      );
+    });
+
+    it("still applies each site's own host checks to what a proxy link carries", () => {
+      for (const url of [
+        "https://images-ext-1.discordapp.net/external/sig/https/example.com/a.png",
+        "https://images-ext-1.discordapp.net/external/sig/http/media.tenor.com/1S3s5iesWX0AAAAC/x.gif",
+        "https://images-ext-1.discordapp.net.evil.com/external/sig/https/media.tenor.com/1S3s5iesWX0AAAAC/x.gif",
+        "https://images-ext-1.discordapp.net/attachments/1/2/x.png"
+      ]) {
+        expect(TokenCodec.encode(url)).toBeNull();
+      }
+    });
+  });
+
   describe("decoding", () => {
     it("refuses a token whose check character is wrong", () => {
       const token = TokenCodec.encode(GIPHY);

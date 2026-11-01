@@ -170,6 +170,14 @@ function tenorPostId(key) {
   return b.length === 12 && b[8] === 0 && b[9] === 0 && b[10] === 0 ? b.readBigUInt64BE(0) : null;
 }
 
+/** Key ending of the MP4 rendition (Discord's proxy links to it); its post is previewed as the full-size GIF. */
+const TENOR_MP4 = "AAAPo";
+
+/** @returns {bigint | null} The post id of a 16-character key whatever its rendition. */
+function tenorPostIdAnyRendition(key) {
+  return key.length === 16 ? Buffer.from(key, "base64url").readBigUInt64BE(0) : null;
+}
+
 function tenorFullGif(id) {
   const b = Buffer.alloc(12);
   b.writeBigUInt64BE(BigInt.asUintN(64, id), 0);
@@ -186,9 +194,15 @@ const tenor = codec({
   allowedDownloadHosts: new Set(["media.tenor.com"]),
   payloadPattern: /^[A-Za-z0-9_-]{8,32}$/,
   payloadFrom(u) {
-    const m = u.path.match(new RegExp(`^(?:/[mM])?/([A-Za-z0-9_-]{8,32})/[^/]+\\.(?:${anyCase("gif")})$`));
+    const m = u.path.match(new RegExp(`^(?:/[mM])?/([A-Za-z0-9_-]{8,32})/[^/]+\\.(${anyCase("gif", "mp4")})$`));
     if (!m) {
       return null;
+    }
+
+    if (m[2].toLowerCase() === "mp4") {
+      // Video: only a standard MP4 key, which maps to its post's GIF.
+      const mp4 = m[1].endsWith(TENOR_MP4) ? tenorPostIdAnyRendition(m[1]) : null;
+      return mp4 === null ? null : tenorFullGif(mp4);
     }
 
     const id = tenorPostId(m[1]);
