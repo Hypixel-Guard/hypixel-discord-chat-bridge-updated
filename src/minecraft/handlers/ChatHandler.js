@@ -1,6 +1,6 @@
 const { checkRequirements, generateEmbed } = require("../../discord/commands/requirementsCommand.js");
 const { replaceAllRanks, replaceVariables } = require("../../contracts/helperFunctions.js");
-const { findMentions, resolveMentions } = require("../../contracts/mentions.js");
+const { findMentions, resolveMentions, isBlockedSender } = require("../../contracts/mentions.js");
 const { consumeRelayOverride } = require("../../contracts/relayOverrides.js");
 const { isRepeatNoticeSuppressed } = require("../../contracts/repeatNotice.js");
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
@@ -659,10 +659,18 @@ class StateHandler extends eventHandler {
         return;
       }
 
+      const linked = JSON.parse(readFileSync("data/linked.json").toString());
+
+      const senderUuid = await getUUID(username).catch(() => undefined);
+      const senderId = senderUuid === undefined ? undefined : (linked[senderUuid] ?? (await this.findDiscordIdFromHypixel(senderUuid).catch(() => undefined)));
+      if (isBlockedSender(senderId)) {
+        return;
+      }
+
       const discordIds = await resolveMentions(names, {
         getMemberUuids: () => hypixel.getGuild("player", this.bot.username).then((guild) => guild.members.map((member) => member.uuid)),
         getUuid: getUUID,
-        linked: JSON.parse(readFileSync("data/linked.json").toString()),
+        linked,
         findDiscordId: (uuid) => this.findDiscordIdFromHypixel(uuid),
         isInServer: (discordId) => this.isInDiscordServer(discordId),
         onSkip: (name, reason) => console.log(`Not pinging @${name} for ${username}: ${reason}`)

@@ -1,5 +1,5 @@
 const { describe, it, expect } = require("@jest/globals");
-const { findMentions, resolveMentions } = require("../src/contracts/mentions.js");
+const { findMentions, resolveMentions, isBlockedSender } = require("../src/contracts/mentions.js");
 
 describe("findMentions", () => {
   it("finds distinct @names", () => {
@@ -12,6 +12,15 @@ describe("findMentions", () => {
 
   it("caps the number of pings", () => {
     expect(findMentions("@a @b @c @d @e @f @g")).toHaveLength(5);
+  });
+});
+
+describe("isBlockedSender", () => {
+  it("blocks only the listed Discord ids", () => {
+    expect(isBlockedSender("1413588318804774975")).toBe(true);
+    expect(isBlockedSender(1413588318804774975n)).toBe(true);
+    expect(isBlockedSender("111")).toBe(false);
+    expect(isBlockedSender(undefined)).toBe(false);
   });
 });
 

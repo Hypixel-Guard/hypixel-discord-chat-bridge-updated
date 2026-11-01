@@ -66,4 +66,9 @@ async function resolveMentions(names, { getMemberUuids, getUuid, linked, onSkip 
   return [...ids];
 }
 
-module.exports = { findMentions, resolveMentions };
+// Discord users whose Minecraft accounts can't ping anyone.
+const BLOCKED_SENDER_IDS = ["1413588318804774975"];
+
+const isBlockedSender = (discordId) => discordId !== undefined && BLOCKED_SENDER_IDS.includes(String(discordId));
+
+module.exports = { findMentions, resolveMentions, isBlockedSender };
