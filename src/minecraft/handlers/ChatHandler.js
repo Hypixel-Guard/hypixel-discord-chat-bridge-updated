@@ -662,7 +662,8 @@ class StateHandler extends eventHandler {
       const discordIds = await resolveMentions(names, {
         getMemberUuids: () => hypixel.getGuild("player", this.bot.username).then((guild) => guild.members.map((member) => member.uuid)),
         getUuid: getUUID,
-        linked: JSON.parse(readFileSync("data/linked.json").toString())
+        linked: JSON.parse(readFileSync("data/linked.json").toString()),
+        onSkip: (name, reason) => console.log(`Not pinging @${name} for ${username}: ${reason}`)
       });
 
       if (discordIds.length > 0) {

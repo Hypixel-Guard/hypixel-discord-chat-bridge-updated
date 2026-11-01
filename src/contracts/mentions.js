@@ -20,9 +20,9 @@ const bare = (uuid) => String(uuid).replace(/-/g, "").toLowerCase();
 /**
  * Discord ids of the mentioned names that are guild members with a linked Discord account.
  * @param {string[]} names
- * @param {{ getMemberUuids: () => Promise<string[]>, getUuid: (name: string) => Promise<string>, linked: Record<string, string> }} deps
+ * @param {{ getMemberUuids: () => Promise<string[]>, getUuid: (name: string) => Promise<string>, linked: Record<string, string>, onSkip?: (name: string, reason: string) => void }} deps
  */
-async function resolveMentions(names, { getMemberUuids, getUuid, linked }) {
+async function resolveMentions(names, { getMemberUuids, getUuid, linked, onSkip = () => {} }) {
   if (names.length === 0) {
     return [];
   }
@@ -36,10 +36,15 @@ async function resolveMentions(names, { getMemberUuids, getUuid, linked }) {
     try {
       uuid = bare(await getUuid(name));
     } catch {
-      continue; // not a valid IGN
+      onSkip(name, "not a valid IGN");
+      continue;
     }
 
-    if (members.has(uuid) && linkedByUuid[uuid] !== undefined) {
+    if (members.has(uuid) === false) {
+      onSkip(name, "not in the guild");
+    } else if (linkedByUuid[uuid] === undefined) {
+      onSkip(name, "has no linked Discord account");
+    } else {
       ids.add(linkedByUuid[uuid]);
     }
   }
