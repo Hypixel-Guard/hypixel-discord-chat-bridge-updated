@@ -1,8 +1,11 @@
+/* global jest */
 // End to end through the bridge's own handlers, with Discord and Minecraft faked: a Discord message with images
 // reaches Minecraft chat as ImgPrev tokens, and tokens in guild chat reach Discord as images.
 
 const { describe, it, expect, beforeAll, afterAll } = require("@jest/globals");
 const { EventEmitter } = require("events");
+const axios = require("axios");
+const crypto = require("crypto");
 const config = require("../config.json");
 const TokenCodec = require("../src/contracts/imgprev/tokenCodec.js");
 const MessageHandler = require("../src/discord/handlers/MessageHandler.js");
@@ -120,6 +123,76 @@ describe("Discord to Minecraft", () => {
 
     expect(sent[0]).toMatch(/\[clip\] \[Wumpus Wave\] hi$/);
     expect(TokenCodec.findTokens(sent[0])).toHaveLength(0);
+  });
+
+  it("sends [GIF] instead of a token when Klipy only has the placeholder GIF for a clip", async () => {
+    const PLACEHOLDER = Buffer.from("not really the gif");
+    const spies = [
+      jest.spyOn(axios, "head").mockResolvedValue({ headers: { "content-length": "78534" } }),
+      jest.spyOn(axios, "get").mockResolvedValue({ data: PLACEHOLDER })
+    ];
+    const bridgeMedia = require("../src/contracts/imgprev/bridgeMedia.js");
+    // The stand-in body must hash like the real placeholder for the check to fire.
+    const realMd5 = "52e983c16a00a92c66eaeb9cbaee2110";
+    const hash = jest.spyOn(crypto, "createHash").mockReturnValue({ update: () => ({ digest: () => realMd5 }) });
+    try {
+      const link = "https://klipy.com/gifs/thats-what-im-sayin";
+      const mp4 = "https://static.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/f5/5a/d1eh2iT3RlXzE.mp4";
+      const client = new EventEmitter();
+      const message = discordMessage({ content: link, client });
+      setTimeout(() => client.emit("messageUpdate", message, { ...message, embeds: [{ url: link, video: { url: mp4 } }] }), 50);
+
+      const sent = await relayToMinecraft(message);
+      expect(sent[0]).toContain("[GIF]");
+      expect(TokenCodec.findTokens(sent[0])).toHaveLength(0);
+      expect(await bridgeMedia.isKlipyPlaceholder(mp4.replace(".mp4", ".gif"))).toBe(true);
+    } finally {
+      hash.mockRestore();
+      spies.forEach((spy) => spy.mockRestore());
+    }
+  });
+
+  it("falls back to the GIF named on the Klipy page when the embed's own GIF is the placeholder", async () => {
+    const bridgeMedia = require("../src/contracts/imgprev/bridgeMedia.js");
+    const PAGE_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/f5/5a/fFcSK4xlzbo24cXwzv.gif";
+    const html = `<meta property="og:image" content="https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/f5/5a/still.webp"/><meta property="og:image" content="${PAGE_GIF}"/>`;
+    const head = jest.spyOn(axios, "head").mockImplementation(async (url) => ({ headers: { "content-length": url.includes("d1eh2iT3RlXzE") ? "78534" : "2155617" } }));
+    const get = jest.spyOn(axios, "get").mockImplementation(async (url) => ({ data: url.includes("klipy.com/gifs/") ? html : Buffer.from("placeholder") }));
+    const hash = jest.spyOn(crypto, "createHash").mockReturnValue({ update: () => ({ digest: () => "52e983c16a00a92c66eaeb9cbaee2110" }) });
+    try {
+      const embed = {
+        url: "https://klipy.com/gifs/dirty-docks-shawty",
+        video: { url: "https://static.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/f5/5a/d1eh2iT3RlXzE.mp4" }
+      };
+      const token = await bridgeMedia.embedTokenChecked(embed);
+      expect(mediaUrls(token)).toEqual([PAGE_GIF.replace("static2", "static")]);
+
+      // Blocked page, or one without a GIF: the label, never an error.
+      get.mockImplementation(async (url) => {
+        if (url.includes("klipy.com/gifs/")) {
+          throw new Error("403");
+        }
+
+        return { data: Buffer.from("placeholder") };
+      });
+      expect(await bridgeMedia.embedTokenChecked({ ...embed, url: "https://klipy.com/gifs/other-clip" })).toBe("[GIF]");
+      get.mockImplementation(async (url) => ({ data: url.includes("klipy.com/gifs/") ? "<html>nothing here</html>" : Buffer.from("placeholder") }));
+      expect(await bridgeMedia.embedTokenChecked({ ...embed, url: "https://klipy.com/gifs/empty-page" })).toBe("[GIF]");
+      expect(await bridgeMedia.embedTokenChecked({ video: embed.video })).toBe("[GIF]");
+    } finally {
+      hash.mockRestore();
+      get.mockRestore();
+      head.mockRestore();
+    }
+  });
+
+  it("keeps a Klipy GIF whose size isn't the placeholder's, and fails open when the check can't reach Klipy", async () => {
+    const bridgeMedia = require("../src/contracts/imgprev/bridgeMedia.js");
+    const head = jest.spyOn(axios, "head").mockResolvedValue({ headers: { "content-length": "4001918" } });
+    expect(await bridgeMedia.isKlipyPlaceholder(KLIPY_GIF)).toBe(false);
+    head.mockRejectedValue(new Error("offline"));
+    expect(await bridgeMedia.isKlipyPlaceholder(KLIPY_GIF)).toBe(false);
+    head.mockRestore();
   });
 
   it("sends a GIF picker link as the GIF from the embed Discord adds a moment later", async () => {

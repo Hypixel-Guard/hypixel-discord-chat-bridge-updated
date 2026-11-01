@@ -1,7 +1,7 @@
 const config = require("../../../config.json");
 const { unemojify } = require("node-emoji");
 const { LINK, convertAll, replaceLinks, trimTrailing } = require("../../contracts/imgprev/linkConverter.js");
-const { settings, toMinecraft, emojiToken, stickerToken, attachmentToken, embedToken, splitMessage } = require("../../contracts/imgprev/bridgeMedia.js");
+const { settings, toMinecraft, emojiToken, stickerToken, attachmentToken, embedTokenChecked, splitMessage } = require("../../contracts/imgprev/bridgeMedia.js");
 const TokenCodec = require("../../contracts/imgprev/tokenCodec.js");
 const { blockLinks } = require("../../contracts/linkFilter.js");
 
@@ -13,7 +13,6 @@ const EMBEDDED_MEDIA_HOSTS = ["klipy.com", "www.klipy.com", "tenor.com", "www.te
 const commandNameOverrides = {
   "608284610169798663": "thyrandomone"
 };
-
 
 const minecraftNameOverrides = {
   "369587006155784193": "bleak"
@@ -43,7 +42,11 @@ class MessageHandler {
       }
 
       const isCommand = content.startsWith(config.minecraft.bot.prefix);
-      const username = (isCommand ? commandNameOverrides[message.author.id] : undefined) ?? minecraftNameOverrides[message.author.id] ?? message.member.displayName ?? message.author.username;
+      const username =
+        (isCommand ? commandNameOverrides[message.author.id] : undefined) ??
+        minecraftNameOverrides[message.author.id] ??
+        message.member.displayName ??
+        message.author.username;
       if (username === undefined || username.length === 0) {
         return;
       }
@@ -223,7 +226,7 @@ class MessageHandler {
     for (const link of links) {
       // Discord keeps the link as posted in the embed's url; with one link and one embed they go together anyway.
       const embed = embeds.find((e) => e.url === link) ?? (links.length === 1 && embeds.length === 1 ? embeds[0] : undefined);
-      const token = embed === undefined ? null : embedToken(embed);
+      const token = embed === undefined ? null : await embedTokenChecked(embed);
       if (token !== null) {
         tokens.set(link, token);
       }

@@ -2,9 +2,11 @@
 // to Minecraft as tokens, which players with the ImgPrev mod see as hover previews, and tokens in Minecraft chat come
 // back to Discord as the images they stand for.
 
+const crypto = require("crypto");
+const axios = require("axios");
 const config = require("../../../config.json");
 const TokenCodec = require("./tokenCodec.js");
-const { labelText } = require("./sites.js");
+const { labelText, isKlipyPageLink } = require("./sites.js");
 
 const DEFAULTS = {
   enabled: true,
@@ -75,6 +77,33 @@ function gifVariant(url) {
   return null;
 }
 
+/**
+ * Klipy answers 200 with the same "CONTENT NO LONGER AVAILABLE" GIF for any file name it doesn't have, and many clips
+ * only exist as .mp4, so a .gif guessed from the video's name can be that placeholder.
+ */
+const KLIPY_PLACEHOLDER = { size: 78534, md5: "52e983c16a00a92c66eaeb9cbaee2110" };
+const MAX_GIF_BYTES = 64 << 20;
+
+/** True only when url is Klipy's placeholder; a network failure counts as "not" so real GIFs aren't dropped. */
+async function isKlipyPlaceholder(url) {
+  try {
+    const head = await axios.head(url, { timeout: 10000, validateStatus: () => true, headers: { "User-Agent": "hypixel-discord-chat-bridge (ImgPrev tokens)" } });
+    if (Number(head.headers["content-length"]) !== KLIPY_PLACEHOLDER.size) {
+      return false;
+    }
+
+    const body = await axios.get(url, {
+      responseType: "arraybuffer",
+      timeout: 10000,
+      maxContentLength: MAX_GIF_BYTES,
+      headers: { "User-Agent": "hypixel-discord-chat-bridge (ImgPrev tokens)" }
+    });
+    return crypto.createHash("md5").update(Buffer.from(body.data)).digest("hex") === KLIPY_PLACEHOLDER.md5;
+  } catch (error) {
+    return false;
+  }
+}
+
 /** A token for an image or GIF link, trying the GIF form of GIF sites' videos first. */
 function mediaLinkToken(url) {
   if (typeof url !== "string") {
@@ -95,6 +124,82 @@ function embedToken(embed) {
   }
 
   return null;
+}
+
+const NO_GIF = "[GIF]";
+
+/**
+ * Klipy's GIF pages answer Cloudflare's challenge to ordinary clients but serve Discord's link-preview bot, whose
+ * og:image tags name the clip's real GIF (each rendition has its own random file name, so it can't be guessed from the
+ * video's). Needs the Discordbot user agent, so it's only a fallback and anything going wrong leaves the [GIF] label.
+ */
+const DISCORDBOT_UA = "Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)";
+const OG_IMAGE = /<meta\s+property="og:image"\s+content="([^"]+)"/g;
+const KLIPY_CDN = /^static\d?\.klipy\.com$/;
+const PAGE_CACHE_MS = { found: 24 * 3600 * 1000, missed: 5 * 60 * 1000 };
+const pageCache = new Map();
+
+/** The real GIF's address from a klipy.com/gifs page, or null whatever goes wrong. */
+async function klipyPageGif(pageUrl) {
+  const u = TokenCodec.parseHttps(pageUrl);
+  if (u === null || !isKlipyPageLink(u)) {
+    return null;
+  }
+
+  const cached = pageCache.get(pageUrl);
+  if (cached !== undefined && cached.until > Date.now()) {
+    return cached.gif;
+  }
+
+  let gif = null;
+  try {
+    const page = await axios.get(pageUrl, { responseType: "text", timeout: 8000, maxRedirects: 0, maxContentLength: 1 << 20, headers: { "User-Agent": DISCORDBOT_UA } });
+    for (const [, address] of String(page.data).matchAll(OG_IMAGE)) {
+      const candidate = TokenCodec.parseHttps(address.replaceAll("&amp;", "&"));
+      if (
+        candidate !== null &&
+        KLIPY_CDN.test(candidate.host) &&
+        /\.gif$/i.test(candidate.path) &&
+        TokenCodec.encode(address) !== null &&
+        !(await isKlipyPlaceholder(address))
+      ) {
+        gif = address;
+        break;
+      }
+    }
+  } catch (error) {
+    // blocked, offline or not a page: no GIF
+  }
+
+  pageCache.set(pageUrl, { gif, until: Date.now() + (gif === null ? PAGE_CACHE_MS.missed : PAGE_CACHE_MS.found) });
+  return gif;
+}
+
+/**
+ * embedToken, but a Klipy GIF that turns out to be the placeholder is skipped. Then the GIF page's own GIF is tried,
+ * and when that fails too a plain [GIF] stands in so Minecraft never shows Klipy's error image.
+ */
+async function embedTokenChecked(embed) {
+  let placeholder = false;
+  for (const media of [embed.video, embed.image, embed.thumbnail]) {
+    const gif = gifVariant(media?.url);
+    if (gif !== null && new URL(gif).host.endsWith("klipy.com") && (await isKlipyPlaceholder(gif))) {
+      placeholder = true;
+      continue;
+    }
+
+    const token = mediaLinkToken(media?.url);
+    if (token !== null) {
+      return token;
+    }
+  }
+
+  if (!placeholder) {
+    return null;
+  }
+
+  const fromPage = typeof embed.url === "string" ? await klipyPageGif(embed.url) : null;
+  return (fromPage === null ? null : TokenCodec.encode(fromPage)) ?? NO_GIF;
 }
 
 /**
@@ -171,6 +276,9 @@ module.exports = {
   gifVariant,
   mediaLinkToken,
   embedToken,
+  embedTokenChecked,
+  isKlipyPlaceholder,
+  klipyPageGif,
   mediaInText,
   replaceTokens,
   splitMessage
