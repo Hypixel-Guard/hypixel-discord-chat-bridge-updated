@@ -38,6 +38,26 @@ function parseHttps(url) {
   }
 }
 
+const PROXY_HOST = /^(?:images-ext-\d{1,3}|media)\.discordapp\.net$/;
+const PROXY_PATH = /^\/external\/[A-Za-z0-9_-]+\/https\/([A-Za-z0-9.-]+)(\/[^?#]*)$/;
+
+/**
+ * Discord re-hosts links posted in chat as images-ext-N.discordapp.net/external/<signature>/https/<host>/<path>. The
+ * link it carries, read like any other (Discord's own query is dropped), or u when it isn't a proxy link.
+ */
+function unwrapDiscordProxy(url, u) {
+  if (!PROXY_HOST.test(u.host)) {
+    return u;
+  }
+
+  try {
+    const m = new URL(url).pathname.match(PROXY_PATH);
+    return (m && parseHttps(`https://${m[1].toLowerCase()}${m[2]}`)) || u;
+  } catch (error) {
+    return u;
+  }
+}
+
 function check(body) {
   return Base62.A[crc32(Buffer.from(body, "ascii")) % 62];
 }
@@ -66,10 +86,12 @@ function expand(codec, s) {
  * @returns {string | null} The token for an image link on a supported site
  */
 function encode(url) {
-  const u = parseHttps(url);
-  if (u === null) {
+  const parsed = parseHttps(url);
+  if (parsed === null) {
     return null;
   }
+
+  const u = unwrapDiscordProxy(url, parsed);
 
   // Several codecs can share a host (Discord emoji, stickers and attachments), so try each until one accepts the path.
   for (const codec of byHost(u.host)) {
