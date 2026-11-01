@@ -221,6 +221,20 @@ class DiscordManager extends CommunicationBridge {
     }
   }
 
+  /** Embeds and webhook names don't ping, so a mention from Minecraft goes out as its own plain message. */
+  async onPing({ chat, username, discordIds }) {
+    const channel = await this.stateHandler.getChannel(chat || "Guild");
+    if (channel === undefined || discordIds.length === 0) {
+      return;
+    }
+
+    this.breakToggleChain(channel.id);
+    await channel.send({
+      content: `**${username}** pinged ${discordIds.map((id) => `<@${id}>`).join(" ")}`,
+      allowedMentions: { parse: [], users: discordIds }
+    });
+  }
+
   async onBroadcastCleanEmbed({ message, color, channel }) {
     console.broadcast(message, "Event");
 

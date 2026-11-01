@@ -1,5 +1,6 @@
 const { checkRequirements, generateEmbed } = require("../../discord/commands/requirementsCommand.js");
 const { replaceAllRanks, replaceVariables } = require("../../contracts/helperFunctions.js");
+const { findMentions, resolveMentions } = require("../../contracts/mentions.js");
 const { consumeRelayOverride } = require("../../contracts/relayOverrides.js");
 const { isRepeatNoticeSuppressed } = require("../../contracts/repeatNotice.js");
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
@@ -625,6 +626,10 @@ class StateHandler extends eventHandler {
         message: relayMessage,
         color: this.minecraftChatColorToHex(this.getRankColor(colouredChatLine))
       });
+
+      if (forceRelay === false && username !== undefined && username !== this.bot.username) {
+        this.pingMentions(chatType, username, relayMessage);
+      }
     }
 
     if (this.isCommand(match.groups.message)) {
@@ -640,6 +645,27 @@ class StateHandler extends eventHandler {
       }
 
       return this.command.handle(match.groups.username, match.groups.message, officer);
+    }
+  }
+
+  async pingMentions(chatType, username, message) {
+    try {
+      const names = findMentions(message.replace(/§[0-9a-fk-or]/g, ""));
+      if (names.length === 0) {
+        return;
+      }
+
+      const discordIds = await resolveMentions(names, {
+        getMemberUuids: () => hypixel.getGuild("player", this.bot.username).then((guild) => guild.members.map((member) => member.uuid)),
+        getUuid: getUUID,
+        linked: JSON.parse(readFileSync("data/linked.json").toString())
+      });
+
+      if (discordIds.length > 0) {
+        await this.minecraft.broadcastPing({ chat: chatType, username, discordIds });
+      }
+    } catch (error) {
+      console.error(`Failed to ping mentioned guild members: ${error}`);
     }
   }
 

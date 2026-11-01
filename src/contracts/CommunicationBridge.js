@@ -15,6 +15,10 @@ class CommunicationBridge {
     return this.bridge.onBroadcast(event);
   }
 
+  broadcastPing(event) {
+    return this.bridge.onPing(event);
+  }
+
   broadcastPlayerToggle(event) {
     return this.bridge.onPlayerToggle(event);
   }
