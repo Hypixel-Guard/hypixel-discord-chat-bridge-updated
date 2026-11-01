@@ -4,6 +4,27 @@ const { getCommands } = require("./infoCommand.js");
 const config = require("../../../config.json");
 const fs = require("fs");
 
+const FIELD_LIMIT = 1024;
+
+function buildFields(title, list) {
+  const chunks = [];
+  let current = "";
+  for (const line of list.split("\n").filter(Boolean)) {
+    if (current.length + line.length + 1 > FIELD_LIMIT) {
+      chunks.push(current);
+      current = "";
+    }
+    current += `${line}\n`;
+  }
+  if (current) chunks.push(current);
+
+  return chunks.map((value, index) => ({
+    name: index === 0 ? title : "​",
+    value,
+    inline: true
+  }));
+}
+
 module.exports = {
   name: "help",
   description: "Shows help menu.",
@@ -26,18 +47,7 @@ module.exports = {
           .setColor(0x0099ff)
           .setTitle("Hypixel Discord Chat Bridge Commands")
           .setDescription("`()` = **required** argument, `[]` = **optional** argument\n`u` = Minecraft Username")
-          .addFields(
-            {
-              name: "**Minecraft**: ",
-              value: `${minecraftCommands}`,
-              inline: true
-            },
-            {
-              name: "**Discord**: ",
-              value: `${discordCommands}`,
-              inline: true
-            }
-          )
+          .addFields(...buildFields("**Minecraft**: ", minecraftCommands), { name: "​", value: "​" }, ...buildFields("**Discord**: ", discordCommands))
           .setFooter({
             text: "by @duckysolucky | /help [command] for more information",
             iconURL: "https://imgur.com/tgwQJTX.png"
