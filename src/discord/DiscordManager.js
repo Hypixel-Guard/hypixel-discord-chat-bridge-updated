@@ -235,6 +235,19 @@ class DiscordManager extends CommunicationBridge {
     });
   }
 
+  /** Tells the logging channel that a mention was not turned into a ping because the member used /toggleping. */
+  async onPingBlocked({ username, discordIds }) {
+    const channel = await this.stateHandler.getChannel("Logger");
+    if (channel === undefined) {
+      return;
+    }
+
+    await channel.send({
+      content: `Blocked a ping: **${username}** tried to ping ${discordIds.map((id) => `<@${id}>`).join(" ")} in guild chat, but they have pings turned off.`,
+      allowedMentions: { parse: [] }
+    });
+  }
+
   async onBroadcastCleanEmbed({ message, color, channel }) {
     console.broadcast(message, "Event");
 

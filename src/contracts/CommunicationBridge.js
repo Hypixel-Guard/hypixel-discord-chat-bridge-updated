@@ -19,6 +19,10 @@ class CommunicationBridge {
     return this.bridge.onPing(event);
   }
 
+  broadcastPingBlocked(event) {
+    return this.bridge.onPingBlocked(event);
+  }
+
   broadcastPlayerToggle(event) {
     return this.bridge.onPlayerToggle(event);
   }

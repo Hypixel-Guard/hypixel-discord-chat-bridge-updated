@@ -1,6 +1,7 @@
 const { checkRequirements, generateEmbed } = require("../../discord/commands/requirementsCommand.js");
 const { replaceAllRanks, replaceVariables } = require("../../contracts/helperFunctions.js");
 const { findMentions, resolveMentions, isBlockedSender } = require("../../contracts/mentions.js");
+const { isPingBlocked } = require("../../contracts/pingBlock.js");
 const { consumeRelayOverride } = require("../../contracts/relayOverrides.js");
 const { isRepeatNoticeSuppressed } = require("../../contracts/repeatNotice.js");
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
@@ -676,8 +677,14 @@ class StateHandler extends eventHandler {
         onSkip: (name, reason) => console.log(`Not pinging @${name} for ${username}: ${reason}`)
       });
 
-      if (discordIds.length > 0) {
-        await this.minecraft.broadcastPing({ chat: chatType, username, discordIds });
+      const blockedIds = discordIds.filter(isPingBlocked);
+      if (blockedIds.length > 0) {
+        await this.minecraft.broadcastPingBlocked({ username, discordIds: blockedIds });
+      }
+
+      const pingIds = discordIds.filter((id) => blockedIds.includes(id) === false);
+      if (pingIds.length > 0) {
+        await this.minecraft.broadcastPing({ chat: chatType, username, discordIds: pingIds });
       }
     } catch (error) {
       console.error(`Failed to ping mentioned guild members: ${error}`);
