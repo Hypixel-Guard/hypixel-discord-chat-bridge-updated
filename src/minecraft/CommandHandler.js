@@ -2,6 +2,7 @@ const { Collection } = require("discord.js");
 const { cleanText } = require("../contracts/filter.js");
 const config = require("../../config.json");
 const axios = require("axios");
+const { isPlayerBlacklisted } = require("../contracts/commandBlacklist.js");
 const fs = require("fs");
 
 class CommandHandler {
@@ -28,9 +29,15 @@ class CommandHandler {
       if (command === undefined) {
         return;
       }
-      console.minecraft(`${player} - [${command.name}] ${message}`);
-      command.officer = officer;
-      command.onCommand(player, message);
+      isPlayerBlacklisted(player).then((blocked) => {
+        if (blocked) {
+          console.minecraft(`${player} - [${command.name}] blocked (command blacklist)`);
+          return;
+        }
+        console.minecraft(`${player} - [${command.name}] ${message}`);
+        command.officer = officer;
+        command.onCommand(player, message);
+      });
     } else if (message.startsWith("-") && message.startsWith("- ") === false) {
       if (config.minecraft.commands.soopy === false || message.at(1) === "-") {
         return;
