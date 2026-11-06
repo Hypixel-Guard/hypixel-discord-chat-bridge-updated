@@ -45,6 +45,11 @@ async function getBestiaryConstants() {
   /** @type {BestiaryConstants} */
   const output = { brackets: bestiary.brackets, islands: {} };
   for (const [islandId, islandData] of Object.entries(bestiary).filter(([key]) => key !== "brackets")) {
+    // Skip non-island entries (e.g. "bracketSets") that have no mobs list
+    if (islandData.hasSubcategories !== true && !Array.isArray(islandData.mobs)) {
+      continue;
+    }
+
     if (islandData.hasSubcategories === true) {
       for (const [categoryId, categoryData] of Object.entries(islandData)) {
         if (categoryData.mobs === undefined) {

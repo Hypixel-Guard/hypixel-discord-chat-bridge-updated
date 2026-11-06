@@ -5,3 +5,4 @@ config.json.save
 auth-cache/
 logs/
 data/
+package-lock.json

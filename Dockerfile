@@ -14,8 +14,8 @@ WORKDIR /usr/src/app
 COPY --chown=node:node . /usr/src/app
 
 # install dependencies
-RUN npm install
-RUN npm ci --only=production
+RUN corepack enable
+RUN pnpm install --frozen-lockfile --prod
 
 # run your app
 USER node
