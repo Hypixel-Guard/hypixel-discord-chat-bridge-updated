@@ -1,5 +1,5 @@
 const { SuccessEmbed } = require("../../contracts/embedHandler.js");
-const { addToBlacklist, removeFromBlacklist, getBlacklist } = require("../../contracts/commandBlacklist.js");
+const { addToBlacklist, removeFromBlacklist } = require("../../contracts/commandBlacklist.js");
 
 module.exports = {
   name: "commandblacklist",
@@ -8,36 +8,25 @@ module.exports = {
   options: [
     {
       name: "arg",
-      description: "Add, Remove or List",
+      description: "Add or Remove",
       type: 3,
       required: true,
       choices: [
         { name: "Add", value: "add" },
-        { name: "Remove", value: "remove" },
-        { name: "List", value: "list" }
+        { name: "Remove", value: "remove" }
       ]
     },
     {
       name: "user",
-      description: "Discord user (required for add/remove)",
+      description: "Discord user",
       type: 6,
-      required: false
+      required: true
     }
   ],
 
   execute: async (interaction) => {
     const arg = interaction.options.getString("arg");
     const user = interaction.options.getUser("user");
-
-    if (arg === "list") {
-      const list = getBlacklist();
-      const text = list.length > 0 ? list.map((id) => `<@${id}> (\`${id}\`)`).join("\n") : "The command blacklist is empty.";
-      return await interaction.followUp({ embeds: [new SuccessEmbed(text)] });
-    }
-
-    if (user === null) {
-      throw new (require("../../contracts/errorHandler.js"))("Please provide a user to add or remove.");
-    }
 
     let message;
     if (arg === "add") {
