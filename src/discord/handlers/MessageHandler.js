@@ -4,6 +4,7 @@ const { LINK, convertAll, replaceLinks, trimTrailing } = require("../../contract
 const { settings, toMinecraft, emojiToken, stickerToken, attachmentToken, embedTokenChecked, splitMessage } = require("../../contracts/imgprev/bridgeMedia.js");
 const TokenCodec = require("../../contracts/imgprev/tokenCodec.js");
 const { blockLinks } = require("../../contracts/linkFilter.js");
+const { isChatBlacklisted } = require("../../contracts/chatBlacklist.js");
 
 // Links whose image or GIF only shows up once Discord has embedded them (its GIF picker posts Klipy or Tenor pages),
 // worth waiting a moment for before the message is relayed.
@@ -27,6 +28,10 @@ class MessageHandler {
   async onMessage(message) {
     try {
       if (message.author.id === client.user.id || !this.shouldBroadcastMessage(message)) {
+        return;
+      }
+
+      if (isChatBlacklisted(message.author.id)) {
         return;
       }
 
