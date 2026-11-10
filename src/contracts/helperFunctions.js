@@ -225,6 +225,21 @@ function replaceVariables(template, variables) {
 }
 
 /**
+ * Like replaceVariables, but escapes Discord markdown in the values (e.g. usernames like _Name_)
+ * @param {string} template
+ * @param {object} variables
+ * @returns
+ */
+function replaceVariablesEscaped(template, variables) {
+  // @ts-ignore
+  return template.replace(/\{(\w+)\}/g, (match, name) =>
+    variables[name] === undefined || variables[name] === null
+      ? match
+      : String(variables[name]).replace(/([\\_*~`|>])/g, "\\$1")
+  );
+}
+
+/**
  * Splits a message into multiple messages
  * @param {string} message
  * @param {number} amount
@@ -322,6 +337,7 @@ module.exports = {
   formatUsername,
   formatNumber,
   replaceVariables,
+  replaceVariablesEscaped,
   splitMessage,
   formatError,
   delay,
