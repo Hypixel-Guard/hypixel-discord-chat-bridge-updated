@@ -8,7 +8,7 @@ const CommandHandler = require("./CommandHandler.js");
 const config = require("../../config.json");
 const fs = require("fs");
 const { ErrorEmbed } = require("../contracts/embedHandler.js");
-const { toDiscord, mediaInText, replaceTokens } = require("../contracts/imgprev/bridgeMedia.js");
+const { toDiscord, mediaInText, replaceTokens, attachedFile, MAX_ATTACHED_BYTES } = require("../contracts/imgprev/bridgeMedia.js");
 
 class DiscordManager extends CommunicationBridge {
   constructor(app) {
@@ -134,8 +134,9 @@ class DiscordManager extends CommunicationBridge {
 
     switch (mode) {
       case "bot": {
-        const images = this.mediaEmbeds(message);
+        const { embeds: images, files } = await this.mediaEmbeds(message);
         await channel.send({
+          files,
           embeds: [
             {
               description: this.withMedia(message, false),
@@ -176,13 +177,13 @@ class DiscordManager extends CommunicationBridge {
 
         this.app.discord.webhook.send({
           content: this.withMedia(message, false),
-          embeds: this.mediaEmbeds(message),
+          ...(await this.mediaEmbeds(message)),
           username: username,
           avatarURL: `https://www.mc-heads.net/avatar/${username}`
         });
         break;
 
-      case "minecraft":
+      case "minecraft": {
         if (fullMessage.length === 0) {
           return;
         }
@@ -195,8 +196,9 @@ class DiscordManager extends CommunicationBridge {
           ]
         });
 
-        if (this.mediaEmbeds(message).length > 0) {
-          channel.send({ embeds: this.mediaEmbeds(message) });
+        const media = await this.mediaEmbeds(message);
+        if (media.embeds.length > 0) {
+          channel.send(media);
         }
 
         if (message.includes("https://")) {
@@ -205,6 +207,7 @@ class DiscordManager extends CommunicationBridge {
           channel.send(links);
         }
         break;
+      }
 
       case "text":
         if (message.trim().length === 0) {
@@ -514,16 +517,36 @@ class DiscordManager extends CommunicationBridge {
     return toDiscord() ? replaceTokens(message, (media) => media.label) : message;
   }
 
-  /** The images behind message's tokens as up to four embeds, which Discord shows together as one gallery. */
-  mediaEmbeds(message) {
+  /**
+   * The images behind message's tokens as up to four embeds, which Discord shows together as one gallery, and the
+   * files those embeds show for sites Discord can't load images from itself (Catbox, Litterbox). A file that can't be
+   * downloaded, or doesn't fit in the message, falls back to linking the image as usual.
+   * @returns {Promise<{ embeds: object[], files: AttachmentBuilder[] }>}
+   */
+  async mediaEmbeds(message) {
     if (!toDiscord()) {
-      return [];
+      return { embeds: [], files: [] };
     }
 
     const shown = mediaInText(message)
       .filter((media) => media.url !== null && !media.expired && this.usableEmoji(media) === undefined)
       .slice(0, 4);
-    return shown.map((media) => ({ url: shown[0].url, image: { url: media.url } }));
+    const downloaded = await Promise.all(shown.map((media) => attachedFile(media)));
+    const files = [];
+    let room = MAX_ATTACHED_BYTES;
+    const embeds = shown.map((media, i) => {
+      const file = downloaded[i];
+      if (file === null || file.data.length > room) {
+        return { url: shown[0].url, image: { url: media.url } };
+      }
+
+      room -= file.data.length;
+      const name = `${i}-${file.name}`;
+      files.push(new AttachmentBuilder(file.data, { name }));
+      return { url: shown[0].url, image: { url: `attachment://${name}` } };
+    });
+
+    return { embeds, files };
   }
 
   cleanMessage(message) {

@@ -203,6 +203,41 @@ async function embedTokenChecked(embed) {
 }
 
 /**
+ * Sites whose files Discord's image proxy fails to fetch (it shows an empty box), so the bridge downloads them itself
+ * and uploads them with the message. Litterbox files are also deleted after at most 72 hours; an upload outlives that.
+ */
+const ATTACHED_SITES = new Set(["catbox", "litterbox"]);
+/** Discord's upload limit for bots is 10 MiB per message; a little is kept back for the request itself. */
+const MAX_ATTACHED_BYTES = 9 << 20;
+
+/**
+ * The file behind media on a site Discord can't load, as { name, data }, or null when it isn't one of those sites or
+ * can't be fetched within maxBytes. media.url is rebuilt by the site's codec on its own host, never taken from chat.
+ */
+async function attachedFile(media, maxBytes = MAX_ATTACHED_BYTES) {
+  if (!ATTACHED_SITES.has(media.site) || media.url === null || maxBytes <= 0) {
+    return null;
+  }
+
+  try {
+    const response = await axios.get(media.url, {
+      responseType: "arraybuffer",
+      timeout: 15000,
+      maxRedirects: 0,
+      maxContentLength: maxBytes,
+      headers: { "User-Agent": "hypixel-discord-chat-bridge (ImgPrev tokens)" }
+    });
+    if (!String(response.headers["content-type"] ?? "").startsWith("image/")) {
+      return null;
+    }
+
+    return { name: new URL(media.url).pathname.slice(1), data: Buffer.from(response.data) };
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
  * The ImgPrev media in a line of Minecraft chat, in order.
  * @returns {{ token: string, index: number, url: string | null, label: string, site: string, expired: boolean, emoji: { id: string, animated: boolean } | null }[]}
  */
@@ -279,6 +314,8 @@ module.exports = {
   embedTokenChecked,
   isKlipyPlaceholder,
   klipyPageGif,
+  MAX_ATTACHED_BYTES,
+  attachedFile,
   mediaInText,
   replaceTokens,
   splitMessage
