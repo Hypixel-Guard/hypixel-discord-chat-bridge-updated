@@ -29,7 +29,12 @@ class ColeweightCommand extends minecraftCommand {
       const args = this.getArgs(message);
       player = args[0] || player;
 
-      const response = await get(`https://ninjune.dev/api/coleweight?username=${encodeURIComponent(player)}`);
+      const response = await get(`https://ninjune.dev/api/coleweight?username=${encodeURIComponent(player)}`, { timeout: 10000 }).catch((/** @type {any} */ err) => {
+        if (err?.code === "ECONNABORTED" || err?.code === "ETIMEDOUT") {
+          throw "Coleweight API is not responding right now. Please try again later!";
+        }
+        throw err;
+      });
       const data = response?.data;
       if (data === undefined) {
         throw "Request to Coleweight API failed. Please try again!";

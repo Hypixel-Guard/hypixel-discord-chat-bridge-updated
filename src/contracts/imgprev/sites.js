@@ -594,37 +594,79 @@ function idPathCodec(code, name, title, cdn, page) {
 const postimages = idPathCodec("p", "postimages", "Postimages", "i.postimg.cc", "postimg.cc");
 const imgbb = idPathCodec("b", "imgbb", "ImgBB", "i.ibb.co", "ibb.co");
 
-const catbox = codec({
-  code: "c",
-  name: "catbox",
-  title: "Catbox",
-  label: Label.IMAGE,
-  acceptedHosts: new Set(["files.catbox.moe"]),
-  allowedDownloadHosts: new Set(["files.catbox.moe"]),
-  payloadPattern: /^[pjegw][a-z0-9]{6}$/,
+/**
+ * files.catbox.moe/{6 lowercase/digits}.{ext}, and the same form on litter.catbox.moe, Catbox's temporary host.
+ * Catbox is case-sensitive and 404s on any other extension, so the payload keeps the exact one: ext code p|j|e|g|w
+ * (png, jpg, jpeg, gif, webp) + id.
+ */
+const CATBOX_ID_CHARS = "0123456789abcdefghijklmnopqrstuvwxyz";
+function catboxCodec(code, name, title, host) {
+  return codec({
+    code,
+    name,
+    title,
+    label: Label.IMAGE,
+    acceptedHosts: new Set([host]),
+    allowedDownloadHosts: new Set([host]),
+    payloadPattern: /^[pjegw][a-z0-9]{6}$/,
+    payloadFrom(u) {
+      const m = u.path.match(/^\/([a-z0-9]{6})\.(png|jpg|jpeg|gif|webp)$/);
+      return m ? { png: "p", jpg: "j", jpeg: "e", gif: "g", webp: "w" }[m[2]] + m[1] : null;
+    },
+    compact: (p) => new Mixed().putString(p.slice(1), CATBOX_ID_CHARS, 6, 6).put("pjegw".indexOf(p[0]), 5).toBase62(),
+    expand(s) {
+      const m = Mixed.fromBase62(s);
+      if (m === null) {
+        return null;
+      }
+
+      const ext = "pjegw"[m.take(5)];
+      const id = m.takeString(CATBOX_ID_CHARS, 6, 6);
+      return m.isEmpty() ? ext + id : null;
+    },
+    mediaUri(p) {
+      const ext = { p: "png", j: "jpg", e: "jpeg", g: "gif" }[p[0]] ?? "webp";
+      return `https://${host}/${p.slice(1)}.${ext}`;
+    }
+  });
+}
+
+const catbox = catboxCodec("c", "catbox", "Catbox", "files.catbox.moe");
+/** Catbox's temporary host: files are deleted after the 1 to 72 hours chosen when they were uploaded. */
+const litterbox = catboxCodec("l", "litterbox", "Litterbox", "litter.catbox.moe");
+
+/**
+ * gif.fxtwitter.com/tweet_video/{id}.webp: FixTweet's animated WebP of a tweet's GIF (Twitter itself only serves
+ * MP4). The id is Twitter's media key, 15 base64url characters; only the .webp form is known to work.
+ */
+const FXTWITTER_ID_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+const fxtwitter = codec({
+  code: "f",
+  name: "fxtwitter",
+  title: "FixTweet",
+  label: Label.GIF,
+  acceptedHosts: new Set(["gif.fxtwitter.com"]),
+  allowedDownloadHosts: new Set(["gif.fxtwitter.com"]),
+  payloadPattern: /^[A-Za-z0-9_-]{8,32}$/,
   payloadFrom(u) {
-    const m = u.path.match(/^\/([a-z0-9]{6})\.(png|jpg|jpeg|gif|webp)$/);
-    return m ? { png: "p", jpg: "j", jpeg: "e", gif: "g", webp: "w" }[m[2]] + m[1] : null;
+    const m = u.path.match(/^\/tweet_video\/([A-Za-z0-9_-]{8,32})\.webp$/);
+    return m ? m[1] : null;
   },
-  compact: (p) => new Mixed().putString(p.slice(1), "0123456789abcdefghijklmnopqrstuvwxyz", 6, 6).put("pjegw".indexOf(p[0]), 5).toBase62(),
+  compact: (id) => new Mixed().putString(id, FXTWITTER_ID_CHARS, 8, 32).toBase62(),
   expand(s) {
     const m = Mixed.fromBase62(s);
     if (m === null) {
       return null;
     }
 
-    const ext = "pjegw"[m.take(5)];
-    const id = m.takeString("0123456789abcdefghijklmnopqrstuvwxyz", 6, 6);
-    return m.isEmpty() ? ext + id : null;
+    const id = m.takeString(FXTWITTER_ID_CHARS, 8, 32);
+    return m.isEmpty() ? id : null;
   },
-  mediaUri(p) {
-    const ext = { p: "png", j: "jpg", e: "jpeg", g: "gif" }[p[0]] ?? "webp";
-    return `https://files.catbox.moe/${p.slice(1)}.${ext}`;
-  }
+  mediaUri: (id) => `https://gif.fxtwitter.com/tweet_video/${id}.webp`
 });
 
 /** In the mod's order, so hosts shared by several codecs (Discord) try them the same way. */
-const ALL = [giphy, imgur, tenor, emoji, discord, sticker, gyazo, klipy, postimages, imgbb, catbox];
+const ALL = [giphy, imgur, tenor, emoji, discord, sticker, gyazo, klipy, postimages, imgbb, catbox, fxtwitter, litterbox];
 const PAGES = [postimages, imgbb];
 
 /** Every codec accepting this (lowercase) host; more than one may match. */

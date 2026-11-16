@@ -65,7 +65,7 @@ describe("ImgPrev token port", () => {
     });
 
     it("covers every site and the links that must not convert", () => {
-      expect(sites.sort()).toEqual(["catbox", "discord", "emoji", "giphy", "gyazo", "imgbb", "imgur", "klipy", "postimages", "refused", "sticker", "tenor"]);
+      expect(sites.sort()).toEqual(["catbox", "discord", "emoji", "fxtwitter", "giphy", "gyazo", "imgbb", "imgur", "klipy", "litterbox", "postimages", "refused", "sticker", "tenor"]);
     });
   });
 
@@ -113,7 +113,7 @@ describe("ImgPrev token port", () => {
       let seed = 7;
       const random = () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
       for (let i = 0; i < 3000; i++) {
-        const site = "GITEDSZYPBC"[Math.floor(random() * 11)];
+        const site = "GITEDSZYPBCFL"[Math.floor(random() * 13)];
         let payload = "";
         for (let j = 1 + Math.floor(random() * 90); j > 0; j--) {
           payload += letters[Math.floor(random() * 62)];
