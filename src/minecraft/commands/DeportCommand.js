@@ -8,7 +8,7 @@ class CountryCommand extends minecraftCommand {
   constructor(minecraft) {
     super(minecraft);
 
-    this.name = "Deport";
+    this.name = "deport";
     this.aliases = [];
     this.description = "Deports a user to a random country.";
     this.options = [
