@@ -1,3 +1,4 @@
+/*
 const HypixelDiscordChatBridgeError = require("../../contracts/errorHandler.js");
 const hypixelRebornAPI = require("../../contracts/API/HypixelRebornAPI.js");
 const { Embed, SuccessEmbed } = require("../../contracts/embedHandler.js");
@@ -95,3 +96,4 @@ module.exports = {
     await interaction.editReply({ embeds: [finalEmbed], files: ["data/guildExperience.txt", "data/guildExperienceSkipped.txt"] });
   }
 };
+*/

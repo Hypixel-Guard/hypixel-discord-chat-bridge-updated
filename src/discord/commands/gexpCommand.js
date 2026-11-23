@@ -139,6 +139,7 @@ function isGexpButton(customId) {
 module.exports = {
   name: "gexp",
   description: "Report guild member GEXP activity.",
+  publicReply:true,
   moderatorOnly: true,
   requiresBot: true,
   options: [
