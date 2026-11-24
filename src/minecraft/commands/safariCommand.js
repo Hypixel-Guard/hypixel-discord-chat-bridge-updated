@@ -15,7 +15,7 @@ class SafariCommand extends minecraftCommand {
     super(minecraft);
 
     this.name = "safari";
-    this.aliases = ["critters"];
+    this.aliases = ["critters", "hunting"];
     this.description = "Critter Safari overview of specified user.";
     this.options = [
       {

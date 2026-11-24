@@ -9,7 +9,7 @@ class HotmCommand extends minecraftCommand {
     super(minecraft);
 
     this.name = "hotm";
-    this.aliases = ["mining"];
+    this.aliases = ["mining", "hotmom"];
     this.description = "Skyblock Hotm Stats of specified user.";
     this.options = [
       {
