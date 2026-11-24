@@ -13,7 +13,10 @@ class CommandHandler {
     this.commands = new Collection();
     const commandFiles = fs.readdirSync("./src/minecraft/commands").filter((file) => file.endsWith(".js"));
     for (const file of commandFiles) {
-      const command = new (require(`./commands/${file}`))(minecraft);
+      const CommandClass = require(`./commands/${file}`);
+      // Skip fully commented-out command files (they export an empty object)
+      if (typeof CommandClass !== "function") continue;
+      const command = new CommandClass(minecraft);
       this.commands.set(command.name, command);
     }
   }
