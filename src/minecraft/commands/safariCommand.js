@@ -66,7 +66,7 @@ class SafariCommand extends minecraftCommand {
       const rankText = rank > 0 ? `#${Number(rank).toLocaleString()}` : "Unranked";
 
       this.send(
-        `${username}'s Safari | Hunting ${huntingOverflow.toFixed(2)} (#${rankText}) | Captures: ${totalCaptures.toLocaleString()} (${captureList}) | Sparkling: ${sparklingDiscovered}/${TOTAL_CRITTERS} (${sparklingCaught.toLocaleString()} caught) | Tickets: ${totalTickets} | Essence: ${essence.toLocaleString()}`
+        `${username}'s Safari | Hunting ${huntingOverflow.toFixed(2)} (${rankText}) | Captures: ${totalCaptures.toLocaleString()} (${captureList}) | Sparkling: ${sparklingDiscovered}/${TOTAL_CRITTERS} (${sparklingCaught.toLocaleString()} caught) | Tickets: ${totalTickets} | Essence: ${essence.toLocaleString()}`
       );
     } catch (error) {
       this.send(formatError(error));
