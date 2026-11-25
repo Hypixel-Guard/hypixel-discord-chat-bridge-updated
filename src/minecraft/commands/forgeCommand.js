@@ -41,44 +41,7 @@ class ForgeCommand extends minecraftCommand {
       }
 
       const forgeItems = forge.map((item) => `${item.slot}: ${item.name} ${item.timeFinishedText}`);
-      const MAX_LENGTH = 250;
-      const prefix = `${username}'s Forge: `;
-      const full = `${prefix}${forgeItems.join(" | ")}`;
-
-      if (full.length <= MAX_LENGTH) {
-        this.send(full);
-        return;
-      }
-
-      // Split into messages on item boundaries, hard-splitting any single oversized item
-      const chunks = [];
-      let current = prefix;
-      let hasItem = false;
-      for (let item of forgeItems) {
-        while (prefix.length + item.length > MAX_LENGTH) {
-          if (hasItem) {
-            chunks.push(current);
-            current = prefix;
-            hasItem = false;
-          }
-          const room = MAX_LENGTH - prefix.length;
-          chunks.push(prefix + item.slice(0, room));
-          item = item.slice(room);
-        }
-        const candidate = hasItem ? `${current} | ${item}` : `${current}${item}`;
-        if (candidate.length > MAX_LENGTH) {
-          chunks.push(current);
-          current = prefix + item;
-        } else {
-          current = candidate;
-        }
-        hasItem = true;
-      }
-      if (hasItem) chunks.push(current);
-
-      for (const chunk of chunks) {
-        this.send(chunk);
-      }
+      await this.sendLong(`${username}'s Forge: ${forgeItems.join(" | ")}`, { maxLength: 250 });
     } catch (error) {
       this.send(formatError(error));
     }
