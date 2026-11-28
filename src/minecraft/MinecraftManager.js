@@ -9,6 +9,7 @@ const { startGexpTracking } = require("./other/gexpTracker.js");
 const config = require("../../config.json");
 const { cleanText } = require("../contracts/filter.js");
 const { suppressRepeatNotice } = require("../contracts/repeatNotice.js");
+const { isStaffDiscordMessage } = require("../contracts/staff.js");
 const mineflayer = require("mineflayer");
 
 class MinecraftManager extends CommunicationBridge {
@@ -110,7 +111,7 @@ class MinecraftManager extends CommunicationBridge {
 
       if (isCommand) {
         try {
-          this.chatHandler.command.handle(commandUsername, commandMessage, officer);
+          this.chatHandler.command.handle(commandUsername, commandMessage, officer, isStaffDiscordMessage(discord));
         } catch (error) {
           console.error(error);
         }

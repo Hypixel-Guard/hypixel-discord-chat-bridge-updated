@@ -7,6 +7,7 @@ class FlipCommand extends minecraftCommand {
     super(minecraft);
 
     this.name = "flip";
+    this.group = "chance";
     this.aliases = ["coinflip", "coin"];
     this.description = "Flip a coin.";
     this.options = [];

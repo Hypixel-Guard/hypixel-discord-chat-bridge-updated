@@ -7,6 +7,7 @@ class D6Command extends minecraftCommand {
     super(minecraft);
 
     this.name = "d6";
+    this.group = "chance";
     this.aliases = ["dice", "roll"];
     this.description = "Roll a six sided dice.";
     this.options = [];

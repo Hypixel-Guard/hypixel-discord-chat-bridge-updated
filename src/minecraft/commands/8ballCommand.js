@@ -9,6 +9,7 @@ class EightBallCommand extends minecraftCommand {
     super(minecraft);
 
     this.name = "8ball";
+    this.group = "joke";
     this.aliases = ["8b"];
     this.description = "Ask an 8ball a question.";
     this.options = [

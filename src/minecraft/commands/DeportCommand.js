@@ -9,6 +9,7 @@ class CountryCommand extends minecraftCommand {
     super(minecraft);
 
     this.name = "deport";
+    this.group = "joke";
     this.aliases = [];
     this.description = "Deports a user to a random country.";
     this.options = [

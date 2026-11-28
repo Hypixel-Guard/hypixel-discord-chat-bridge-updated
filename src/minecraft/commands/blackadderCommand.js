@@ -8,6 +8,7 @@ class BlackadderCommand extends minecraftCommand {
     super(minecraft);
 
     this.name = "blackadder";
+    this.group = "joke";
     this.aliases = ["ba"];
     this.description = "Get a random Blackadder quote.";
     this.options = [];

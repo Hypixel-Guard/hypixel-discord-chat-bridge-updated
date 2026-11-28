@@ -5,12 +5,19 @@ const axios = require("axios");
 const { isPlayerBlacklisted } = require("../contracts/commandBlacklist.js");
 const fs = require("fs");
 
+// Cooldown per command group, in seconds. A command can override it with `this.cooldownSeconds`.
+const GROUP_COOLDOWNS = {
+  chance: 10,
+  joke: 30
+};
+
 class CommandHandler {
   /** @param {import("minecraft-protocol").Client} minecraft */
   constructor(minecraft) {
     this.minecraft = minecraft;
     this.prefix = config.minecraft.bot.prefix;
     this.commands = new Collection();
+    this.cooldowns = new Map();
     const commandFiles = fs.readdirSync("./src/minecraft/commands").filter((file) => file.endsWith(".js"));
     for (const file of commandFiles) {
       const CommandClass = require(`./commands/${file}`);
@@ -21,7 +28,31 @@ class CommandHandler {
     }
   }
 
-  handle(player, message, officer) {
+  /**
+   * Returns true if the command is still cooling down, otherwise starts its cooldown. The cooldown is
+   * per command and shared by all players. Only the first blocked attempt gets a reply.
+   */
+  isOnCooldown(command) {
+    const seconds = command.cooldownSeconds ?? GROUP_COOLDOWNS[command.group];
+    if (!seconds) {
+      return false;
+    }
+
+    const now = Date.now();
+    const cooldown = this.cooldowns.get(command.name);
+    if (cooldown && now < cooldown.until) {
+      if (!cooldown.warned) {
+        cooldown.warned = true;
+        command.send(`${this.prefix}${command.name} is on cooldown, wait ${Math.ceil((cooldown.until - now) / 1000)}s.`);
+      }
+      return true;
+    }
+
+    this.cooldowns.set(command.name, { until: now + seconds * 1000, warned: false });
+    return false;
+  }
+
+  handle(player, message, officer, staff = false) {
     if (message.startsWith(this.prefix)) {
       if (config.minecraft.commands.normal === false) {
         return;
@@ -39,6 +70,11 @@ class CommandHandler {
         }
         console.minecraft(`${player} - [${command.name}] ${message}`);
         command.officer = officer;
+        // Staff (and anyone in officer chat) skip cooldowns, and their uses don't start one for others.
+        command.staff = staff || officer;
+        if (!command.staff && this.isOnCooldown(command)) {
+          return;
+        }
         command.onCommand(player, message);
       });
     } else if (message.startsWith("-") && message.startsWith("- ") === false) {

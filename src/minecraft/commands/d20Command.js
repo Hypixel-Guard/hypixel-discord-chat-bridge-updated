@@ -7,6 +7,7 @@ class D20Command extends minecraftCommand {
     super(minecraft);
 
     this.name = "d20";
+    this.group = "chance";
     this.aliases = [];
     this.description = "Roll a twenty sided dice.";
     this.options = [];

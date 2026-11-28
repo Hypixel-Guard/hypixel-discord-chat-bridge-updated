@@ -7,6 +7,7 @@ class CalculateCommand extends minecraftCommand {
     super(minecraft);
 
     this.name = "calculate";
+    this.group = "joke";
     this.aliases = ["calc", "math"];
     this.description = "Calculate.";
     this.options = [

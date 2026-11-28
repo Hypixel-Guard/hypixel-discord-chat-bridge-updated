@@ -113,6 +113,8 @@ class AskCommand extends minecraftCommand {
     super(minecraft);
 
     this.name = "ask";
+    this.group = "joke";
+    this.cooldownSeconds = 0; // has its own 60s cooldown in onCommand
     this.aliases = ["ai", "askai"];
     this.description = "Ask the AI a question.";
     this.options = [
@@ -139,7 +141,7 @@ class AskCommand extends minecraftCommand {
     const cooldown = 60 * 1000;
     const currentTime = Date.now();
 
-    if (currentTime - lastQuestionTime < cooldown) {
+    if (!this.staff && currentTime - lastQuestionTime < cooldown) {
       const secondsLeft = Math.ceil(
         (cooldown - (currentTime - lastQuestionTime)) / 1000
       );
@@ -151,7 +153,9 @@ class AskCommand extends minecraftCommand {
       return;
     }
 
-    lastQuestionTime = currentTime;
+    if (!this.staff) {
+      lastQuestionTime = currentTime;
+    }
 
     this.send("Input received.");
 

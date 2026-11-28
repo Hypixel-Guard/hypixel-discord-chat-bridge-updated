@@ -4,6 +4,7 @@ const { findMentions, resolveMentions, isBlockedSender } = require("../../contra
 const { isPingBlocked } = require("../../contracts/pingBlock.js");
 const { consumeRelayOverride } = require("../../contracts/relayOverrides.js");
 const { isRepeatNoticeSuppressed } = require("../../contracts/repeatNotice.js");
+const { isStaffGuildRank } = require("../../contracts/staff.js");
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const updateCommand = require("../../discord/commands/updateCommand.js");
 const { checkGuildCapacity } = require("../other/guildCapacityMonitor.js");
@@ -649,7 +650,7 @@ class StateHandler extends eventHandler {
         return this.command.handle(player, command, officer);
       }
 
-      return this.command.handle(match.groups.username, match.groups.message, officer);
+      return this.command.handle(match.groups.username, match.groups.message, officer, isStaffGuildRank(match.groups.guildRank));
     }
   }
 
