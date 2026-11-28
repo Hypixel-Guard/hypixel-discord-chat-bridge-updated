@@ -4,10 +4,43 @@ const { Embed } = require("../../contracts/embedHandler.js");
 const config = require("../../../config.json");
 const fs = require("fs");
 
+const FIELD_LIMIT = 1024;
+
+function buildFields(title, list) {
+  const chunks = [];
+  let current = "";
+  for (const line of list.split("\n").filter(Boolean)) {
+    if (current.length + line.length + 1 > FIELD_LIMIT) {
+      chunks.push(current);
+      current = "";
+    }
+    current += `${line}\n`;
+  }
+  if (current) chunks.push(current);
+
+  return chunks.map((value, index) => ({
+    name: index === 0 ? title : "​",
+    value,
+    inline: true
+  }));
+}
+
 function formatOptions(name, required) {
   return replaceVariables(required ? ` ({${name}})` : ` [{${name}}]`, { username: "u" })
     .replaceAll("{", "")
     .replaceAll("}", "");
+}
+
+function getMinecraftCommands() {
+  return (
+    fs
+      .readdirSync("./src/minecraft/commands")
+      .filter((file) => file.endsWith(".js"))
+      .map((file) => require(`../../minecraft/commands/${file}`))
+      // Skip fully commented-out command files (they export an empty object)
+      .filter((CommandClass) => typeof CommandClass === "function")
+      .map((CommandClass) => new CommandClass())
+  );
 }
 
 function getCommands(commands) {
@@ -18,14 +51,11 @@ function getCommands(commands) {
     })
     .join("");
 
-  const minecraftCommands = fs
-    .readdirSync("./src/minecraft/commands")
-    .filter((file) => file.endsWith(".js"))
-    .map((file) => {
-      const command = new (require(`../../minecraft/commands/${file}`))();
+  const minecraftCommands = getMinecraftCommands()
+    .map((command) => {
       const optionsString = command.options?.map(({ name, required }) => formatOptions(name, required)).join("");
 
-      return `- \`${command.name}${optionsString}\`\n`;
+      return `- \`${command.name}${optionsString ?? ""}\`\n`;
     })
     .join("");
 
@@ -37,6 +67,8 @@ module.exports = {
   description: "Shows information about the bot.",
   requiresBot: true,
   getCommands,
+  getMinecraftCommands,
+  buildFields,
   execute: async (interaction) => {
     try {
       if (bot === undefined || bot._client.chat === undefined) {
@@ -46,11 +78,7 @@ module.exports = {
       const { discordCommands, minecraftCommands } = getCommands(interaction.client.commands);
 
       const infoEmbed = new Embed().setTitle("Hypixel Bridge Bot Commands").addFields(
-        {
-          name: "**Minecraft Commands**: ",
-          value: `${minecraftCommands}`,
-          inline: true
-        },
+        ...buildFields("**Minecraft Commands**: ", minecraftCommands),
         {
           name: "**Discord Commands**: ",
           value: `${discordCommands}`,

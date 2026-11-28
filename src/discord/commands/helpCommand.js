@@ -1,29 +1,7 @@
 const HypixelDiscordChatBridgeError = require("../../contracts/errorHandler.js");
 const { Embed } = require("../../contracts/embedHandler.js");
-const { getCommands } = require("./infoCommand.js");
+const { getCommands, getMinecraftCommands, buildFields } = require("./infoCommand.js");
 const config = require("../../../config.json");
-const fs = require("fs");
-
-const FIELD_LIMIT = 1024;
-
-function buildFields(title, list) {
-  const chunks = [];
-  let current = "";
-  for (const line of list.split("\n").filter(Boolean)) {
-    if (current.length + line.length + 1 > FIELD_LIMIT) {
-      chunks.push(current);
-      current = "";
-    }
-    current += `${line}\n`;
-  }
-  if (current) chunks.push(current);
-
-  return chunks.map((value, index) => ({
-    name: index === 0 ? title : "​",
-    value,
-    inline: true
-  }));
-}
 
 module.exports = {
   name: "help",
@@ -55,11 +33,7 @@ module.exports = {
 
         await interaction.followUp({ embeds: [helpMenu] });
       } else {
-        const minecraftCommand = fs
-          .readdirSync("./src/minecraft/commands")
-          .filter((file) => file.endsWith(".js"))
-          .map((file) => new (require(`../../minecraft/commands/${file}`))())
-          .find((command) => command.name === commandName || command.aliases.includes(commandName));
+        const minecraftCommand = getMinecraftCommands().find((command) => command.name === commandName || command.aliases?.includes(commandName));
 
         const type = minecraftCommand ? "minecraft" : "discord";
 
