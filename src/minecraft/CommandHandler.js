@@ -5,7 +5,8 @@ const axios = require("axios");
 const { isPlayerBlacklisted } = require("../contracts/commandBlacklist.js");
 const fs = require("fs");
 
-// Cooldown per command group, in seconds. A command can override it with `this.cooldownSeconds`.
+// Cooldown shared by every command in a group, in seconds. A command can also set `this.cooldownSeconds`
+// for a cooldown of its own on top of the group's.
 const GROUP_COOLDOWNS = {
   chance: 10,
   joke: 30
@@ -29,26 +30,33 @@ class CommandHandler {
   }
 
   /**
-   * Returns true if the command is still cooling down, otherwise starts its cooldown. The cooldown is
-   * per command and shared by all players. Only the first blocked attempt gets a reply.
+   * Returns true if the command is still cooling down, otherwise starts its cooldowns. They are shared by
+   * all players. Only the first blocked attempt during each cooldown gets a reply.
    */
   isOnCooldown(command) {
-    const seconds = command.cooldownSeconds ?? GROUP_COOLDOWNS[command.group];
-    if (!seconds) {
-      return false;
-    }
+    const timers = [
+      [`group:${command.group}`, GROUP_COOLDOWNS[command.group]],
+      [`command:${command.name}`, command.cooldownSeconds]
+    ].filter(([, seconds]) => seconds);
 
     const now = Date.now();
-    const cooldown = this.cooldowns.get(command.name);
-    if (cooldown && now < cooldown.until) {
-      if (!cooldown.warned) {
-        cooldown.warned = true;
-        command.send(`${this.prefix}${command.name} is on cooldown, wait ${Math.ceil((cooldown.until - now) / 1000)}s.`);
+    // If both are running, report the one that ends last.
+    const [blocking] = timers
+      .map(([key]) => this.cooldowns.get(key))
+      .filter((cooldown) => cooldown && now < cooldown.until)
+      .sort((a, b) => b.until - a.until);
+
+    if (blocking) {
+      if (!blocking.warned) {
+        blocking.warned = true;
+        command.send(`${this.prefix}${command.name} is on cooldown, wait ${Math.ceil((blocking.until - now) / 1000)}s.`);
       }
       return true;
     }
 
-    this.cooldowns.set(command.name, { until: now + seconds * 1000, warned: false });
+    for (const [key, seconds] of timers) {
+      this.cooldowns.set(key, { until: now + seconds * 1000, warned: false });
+    }
     return false;
   }
 
@@ -72,7 +80,9 @@ class CommandHandler {
         command.officer = officer;
         // Staff (and anyone in officer chat) skip cooldowns, and their uses don't start one for others.
         command.staff = staff || officer;
-        if (!command.staff && this.isOnCooldown(command)) {
+        // Some commands only reply with a usage error without arguments, which shouldn't cost a cooldown.
+        const usageErrorOnly = command.skipCooldownWithoutArgs === true && args.length === 0;
+        if (!command.staff && !usageErrorOnly && this.isOnCooldown(command)) {
           return;
         }
         command.onCommand(player, message);

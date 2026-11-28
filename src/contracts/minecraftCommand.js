@@ -44,6 +44,19 @@ function splitOnSeparator(message, maxLength, separator) {
   return chunks;
 }
 
+/**
+ * Whether a chat line is the bot's own `message` appearing in guild or officer chat.
+ * @param {string} line
+ * @param {string} message
+ */
+function isOwnEcho(line, message) {
+  const normalise = (text) => text.replace(/§[0-9a-fk-or]/g, "").replace(/\s+/g, " ").trim();
+  const text = normalise(line);
+  const header = text.slice(0, text.indexOf(": "));
+
+  return /^(Guild|Officer) > /.test(header) && header.includes(bot.username) && text.slice(header.length + 2) === normalise(message);
+}
+
 class minecraftCommand {
   /** @param {import("minecraft-protocol").Client} minecraft */
   constructor(minecraft) {
@@ -102,17 +115,24 @@ class minecraftCommand {
       const sendMessage = async () => {
         return /** @type {Promise<void>} */ (
           new Promise((resolve, reject) => {
+            // Hypixel's errors don't say which line they are about, and may be about another one sent at the
+            // same moment (e.g. a relayed Discord message). So an error only counts if ours never shows up in chat.
+            let delivered = false;
+            let failure = null;
+
             const listener = async (/** @type {{ toString: () => any; }} */ msg) => {
               const msgStr = msg.toString();
 
+              if (isOwnEcho(msgStr, message)) {
+                delivered = true;
+              }
+
               if (msgStr.includes("You are sending commands too fast!") && !msgStr.includes(":")) {
-                bot.removeListener("message", listener);
-                reject(new Error("rate-limited"));
+                failure = "rate-limited";
               }
 
               if (msgStr.includes("You cannot say the same message twice!") && !msgStr.includes(":")) {
-                bot.removeListener("message", listener);
-                reject(new Error("duplicate-message"));
+                failure = "duplicate-message";
               }
             };
 
@@ -127,7 +147,11 @@ class minecraftCommand {
 
             setTimeout(() => {
               bot.removeListener("message", listener);
-              resolve();
+              if (failure !== null && !delivered) {
+                reject(new Error(failure));
+              } else {
+                resolve();
+              }
             }, 500);
           })
         );
