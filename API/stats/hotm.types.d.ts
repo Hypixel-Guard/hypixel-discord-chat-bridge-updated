@@ -28,4 +28,5 @@ export type HotM = {
     };
   };
   level: Level;
+  nucleusRuns: number;
 };

@@ -68,6 +68,21 @@ function getPowder(profile, type) {
 }
 
 /**
+ * Counts completed Crystal Nucleus runs. A run places all five of these
+ * crystals, so the least-placed one is the number of finished runs.
+ * `leveling.completions.NUCLEUS_RUNS` is not used as it reads lower than the real count.
+ * @param {import("../../types/profiles.js").Member} profile
+ * @returns {number}
+ */
+function getNucleusRuns(profile) {
+  const crystals = profile?.mining_core?.crystals;
+
+  return Math.min(
+    ...["jade", "amber", "amethyst", "sapphire", "topaz"].map((gem) => crystals?.[`${gem}_crystal`]?.total_placed ?? 0)
+  );
+}
+
+/**
  * Returns the player's HotM stats.
  * @param {import("../../types/profiles.js").Member} profile
  * @returns {import("./hotm.types").HotM | null}
@@ -88,7 +103,8 @@ function getHotm(profile) {
         gemstone: getPowder(profile, "gemstone"),
         glacite: getPowder(profile, "glacite")
       },
-      level: getHotmLevel(hotmXp)
+      level: getHotmLevel(hotmXp),
+      nucleusRuns: getNucleusRuns(profile)
     };
   } catch (error) {
     console.error(error);
